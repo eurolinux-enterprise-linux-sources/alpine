@@ -2,13 +2,17 @@
 
 Summary: powerful, easy to use console email client
 Name: alpine
-Version: 2.02
-Release: 2%{?dist}
+Version: 2.10
+Release: 3%{?dist}
 
 License: ASL 2.0
 Group: Applications/Internet
-URL: http://re-alpine.sourceforge.net/ 
-Source0:  http://downloads.sourceforge.net/sourceforge/re-alpine/re-alpine-%{version}%{?pre}.tar.bz2
+# Upstream change - see https://groups.google.com/forum/#!msg/comp.mail.pine/4w_f1ro6GRA/faiu1Egw_ywJ
+#URL: http://re-alpine.sourceforge.net/ 
+#Source0:  http://downloads.sourceforge.net/sourceforge/re-alpine/re-alpine-%{version}%{?pre}.tar.bz2
+URL: http://patches.freeiz.com/alpine/info/alpine.html
+Source0: http://patches.freeiz.com/alpine/patches/alpine-2.10/alpine-%{version}.clean.tar.lzma
+
 
 # Using "Conflicts" instead of Obsoletes because while alpine is substantially
 # compatible with pine the change to Unicode breaks important user
@@ -25,14 +29,6 @@ Conflicts: pine
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 Provides: re-alpine = %{version}-%{release}
-
-# short-term workaround until gcc is fixed
-# http://bugzilla.redhat.com/496400
-Patch1: alpine-2.00-gcc44_reply_hack.patch
-
-## upstreamable patches
-# this one maybe already, recall grumblings onlinst awhile back -- Rex
-Patch50: re-alpine-2.02-openssl.patch
 
 #BuildRequires: automake libtool
 BuildRequires: gettext
@@ -72,10 +68,7 @@ GNU Build System's autotools.
 
 
 %prep
-%setup -q -n re-alpine-%{version}
-
-%patch1 -p1 -b .gcc44_reply_hack
-%patch50 -p1 -b .openssl
+%setup -q -n alpine-%{version}
 
 #autoreconf -f -i
 
@@ -130,6 +123,30 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Sat Aug 03 2013 Dennis Gilmore <dennis@ausil.us> - 2.10-3
+- remove refrences to non existant README.fedora file
+
+* Sat Aug 03 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.10-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
+
+* Fri Mar 15 2013 Paul Wouters <pwouters@redhat.com> - 2.10-1
+- Build from new upstream for 2.10, fixes rhbz#838359
+
+* Wed Feb 13 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.03-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_19_Mass_Rebuild
+
+* Thu Dec 20 2012 Joshua Daniel Franklin <joshuadfranklin@yahoo.com> 2.03-2
+- add README.fedora
+
+* Thu Dec 20 2012 Joshua Daniel Franklin <joshuadfranklin@yahoo.com> 2.03-1
+- re-alpine-2.03 (#880328,#888204)
+
+* Wed Jul 18 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.02-4
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
+
+* Thu Jan 12 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.02-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_17_Mass_Rebuild
+
 * Mon Feb 07 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.02-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
 
@@ -184,7 +201,7 @@ rm -rf $RPM_BUILD_ROOT
 * Tue Feb 19 2008 Fedora Release Engineering <rel-eng@fedoraproject.org> - 1.00-3
 - Autorebuild for GCC 4.3
 
-* Fri Dec 22 2007 Rex Dieter <rdieter[AT]fedoraproject.org> 1.00-2
+* Sat Dec 22 2007 Rex Dieter <rdieter[AT]fedoraproject.org> 1.00-2
 - --with-system-pinerc=%%_sysconfdir/pine.conf
   --with-system-fixed-pinerc=%%_sysconfdir/pine.conf.fixed (#426512)
 
@@ -197,7 +214,7 @@ rm -rf $RPM_BUILD_ROOT
 * Thu Nov 15 2007 Joshua Daniel Franklin <joshuadfranklin@yahoo.com> 0.99999-3
 - BuildRequires aspell to make configure happy
 
-* Thu Nov 09 2007 Joshua Daniel Franklin <joshuadfranklin@yahoo.com> 0.99999-2
+* Fri Nov 09 2007 Joshua Daniel Franklin <joshuadfranklin@yahoo.com> 0.99999-2
 - update to latest 
 
 * Thu Oct 25 2007 Rex Dieter <rdieter[AT]fedoraproject.org. 0.9999-4
@@ -215,11 +232,11 @@ rm -rf $RPM_BUILD_ROOT
 - --with-passfile=.alpine.passfile
 - Requires: mailcap
 
-* Mon Jul 24 2007 Joshua Daniel Franklin <joshuadfranklin@yahoo.com> 0.999-2.2
+* Tue Jul 24 2007 Joshua Daniel Franklin <joshuadfranklin@yahoo.com> 0.999-2.2
 - remove problem cc5.sol file
 - integrate changes from Patrick "Jima" Laughton <jima@beer.tclug.org>
 
-* Mon Jul 24 2007 Joshua Daniel Franklin <joshuadfranklin@yahoo.com> 0.999-2.1
+* Tue Jul 24 2007 Joshua Daniel Franklin <joshuadfranklin@yahoo.com> 0.999-2.1
 - correct spec syntax, explain Conflicts tag
 
 * Mon Jul 23 2007 Joshua Daniel Franklin <joshuadfranklin@yahoo.com> 0.999-2.0

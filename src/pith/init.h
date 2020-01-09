@@ -3,6 +3,7 @@
  *
  * ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +25,7 @@
 #define ALPINE_VERSION		PACKAGE_VERSION
 
 #define	LEGAL_NOTICE \
-   "Copyright 2006-2008 University of Washington"
-
-#define	LEGAL_NOTICE2 \
-   "Copyright 2009-2010 Re-Alpine Project"
-
+   "For Copyright information press \"?\""
 
 /* exported protoypes */
 int               init_username(struct pine *);

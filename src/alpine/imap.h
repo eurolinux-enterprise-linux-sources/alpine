@@ -3,6 +3,7 @@
  *
  * ========================================================================
  * Copyright 2006-2007 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +22,10 @@
 
 
 /* exported protoypes */
+void pine_parse_quota (MAILSTREAM *, unsigned char *, QUOTALIST *);
+QUOTALIST *pine_quotalist_copy (QUOTALIST  *);
 void   *pine_block_notify(int, void *);
-long    pine_tcptimeout(long, long);
+long    pine_tcptimeout(long, long, char *);
 long    pine_sslcertquery(char *, char *, char *);
 char   *pine_newsrcquery(MAILSTREAM *, char *, char *);
 int     url_local_certdetails(char *);

@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: mimetype.c 955 2008-03-06 23:52:36Z hubert@u.washing
 /*
  * ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -176,6 +177,35 @@ mt_srch_mime_type(MT_OPERATORPROC mt_operator, MT_MAP_T *mt_map)
 	}
 	else
 	  panic("Unhandled mime type search");
+    }
+
+    /* if we still can not find the type, but it is a .docx (or alike) extension
+	set the type here. Do not use the grope function.
+     */
+    if(rv == 0){
+	rv = 1;	/* assume success */
+	mt_map->to.mime.type = TYPEAPPLICATION;
+	if(!strucmp(mt_map->from.ext, "docx"))
+	    mt_map->to.mime.subtype = cpystr("VND.OPENXMLFORMATS-OFFICEDOCUMENT.WORDPROCESSINGML.DOCUMENT");
+	else if(!strucmp(mt_map->from.ext, "xslx"))
+	    mt_map->to.mime.subtype = cpystr("VND.OPENXMLFORMATS-OFFICEDOCUMENT.SPREADSHEETML.SHEET");
+	else if(!strucmp(mt_map->from.ext, "xltx"))
+	    mt_map->to.mime.subtype = cpystr("VND.OPENXMLFORMATS-OFFICEDOCUMENT.SPREADSHEETML.TEMPLATE");
+	else if(!strucmp(mt_map->from.ext, "potx"))
+	    mt_map->to.mime.subtype = cpystr("VND.OPENXMLFORMATS-OFFICEDOCUMENT.PRESENTATIONML.TEMPLATE");
+	else if(!strucmp(mt_map->from.ext, "ppsx"))
+	    mt_map->to.mime.subtype = cpystr("VND.OPENXMLFORMATS-OFFICEDOCUMENT.PRESENTATIONML.SLIDESHOW");
+	else if(!strucmp(mt_map->from.ext, "pptx"))
+	    mt_map->to.mime.subtype = cpystr("VND.OPENXMLFORMATS-OFFICEDOCUMENT.PRESENTATIONML.PRESENTATION");
+	else if(!strucmp(mt_map->from.ext, "sldx"))
+	    mt_map->to.mime.subtype = cpystr("VND.OPENXMLFORMATS-OFFICEDOCUMENT.PRESENTATIONML.SLIDE");
+	else if(!strucmp(mt_map->from.ext, "dotx"))
+	    mt_map->to.mime.subtype = cpystr("VND.OPENXMLFORMATS-OFFICEDOCUMENT.WORDPROCESSINGML.TEMPLATE");
+	else if(!strucmp(mt_map->from.ext, "xlam"))
+	    mt_map->to.mime.subtype = cpystr("VND.MS-EXCEL.ADDIN.MACROENABLED.12");
+	else if(!strucmp(mt_map->from.ext, "xslb"))
+	    mt_map->to.mime.subtype = cpystr("VND.MS-EXCEL.SHEET.BINARY.MACROENABLED.12");
+	else rv = 0;	/* else, failure */
     }
 
 

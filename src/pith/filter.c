@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: filter.c 1266 2009-07-14 18:39:12Z hubert@u.washingt
 /*
  * ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -4983,6 +4984,7 @@ html_a(HANDLER_S *hd, int ch, int cmd)
 	     && p->value
 	     && (HANDLES_LOC(hd->html_data)
 		 || struncmp(p->value, "x-alpine-", 9)
+		 || struncmp(p->value, "x-pine-help", 11)
 		 || p->value[0] == '#'))
 	    href = p;
 	  else if(!strucmp(p->attribute, "NAME"))
@@ -7226,6 +7228,10 @@ html_element_collector(FILTER_S *fd, int ch)
 	}
 	else if(ED(fd)->proc_inst){
 	    return(1);			/* return without display... */
+	}
+	else if(!strucmp(ED(fd)->element,"STYLE") && ED(fd)->badform){
+	    dprint((2, "-- html error: empty tag with STYLE parameter!"));
+	    return(1);
 	}
 	else if(!ED(fd)->quoted || ED(fd)->badform){
 	    ELPROP_S *ep;

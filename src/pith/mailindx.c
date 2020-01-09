@@ -4,6 +4,7 @@ static char rcsid[] = "$Id: mailindx.c 1266 2009-07-14 18:39:12Z hubert@u.washin
 
 /* ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -291,6 +292,9 @@ init_index_format(char *format, INDEX_COL_S **answer)
 	      case iSDate:
 	      case iSDateTime:
 	      case iSDateTime24:
+	      case iPrefDate:
+	      case iPrefTime:
+	      case iPrefDateTime:
 	        {
 		    /*
 		     * Format a date to see how long it is.
@@ -299,14 +303,29 @@ init_index_format(char *format, INDEX_COL_S **answer)
 		     * of the translated yesterdays and friends but...
 		     */
 		    struct tm tm;
+		    int len = 20;
 		    char ss[100];
 
 		    memset(&tm, 0, sizeof(tm));
 		    tm.tm_year = 106;
 		    tm.tm_mon = 11;
 		    tm.tm_mday = 31;
-		    our_strftime(ss, sizeof(ss), "%x", &tm);
-		    (*answer)[column].req_width = MIN(MAX(9, utf8_width(ss)), 20);
+		    tm.tm_hour = 3;
+		    tm.tm_min = 23;
+		    tm.tm_wday = 3;
+		    switch((*answer)[column].ctype){
+			case iPrefTime:
+			    our_strftime(ss, sizeof(ss), "%X", &tm);
+			    break;
+			case iPrefDateTime:
+			    our_strftime(ss, sizeof(ss), "%c", &tm);
+			    len = 32;
+			    break;
+			default:
+			    our_strftime(ss, sizeof(ss), "%x", &tm);
+			    break;
+		    }
+		    (*answer)[column].req_width = MIN(MAX(9, utf8_width(ss)), len);
 		}
 
 		(*answer)[column].monabb_width = monabb_width;
@@ -4272,6 +4291,7 @@ date_str(char *datesrc, IndexColType type, int v, char *str, size_t str_len,
 	    tm.tm_mday = MIN(MAX(d.day, 1), 31);
 	    tm.tm_hour = MIN(MAX(d.hour, 0), 23);
 	    tm.tm_min  = MIN(MAX(d.minute, 0), 59);
+            tm.tm_wday = MIN(MAX(d.wkday, 0), 6);
 	    tmptr = &tm;
 	}
 

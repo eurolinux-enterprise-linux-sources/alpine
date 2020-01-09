@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: help.c 1032 2008-04-11 00:30:04Z hubert@u.washington
 /*
  * ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -390,6 +391,7 @@ help_processor(int cmd, MSGNO_S *msgmap, SCROLL_S *sparms)
 {
     int rv = 0;
     char message[64];
+    struct help_texts *t;
 
     switch(cmd){
 	/*----------- Print all the help ------------*/
@@ -405,6 +407,23 @@ help_processor(int cmd, MSGNO_S *msgmap, SCROLL_S *sparms)
 	    close_printer();
 	}
 
+	break;
+
+      case MC_EXPORT: /* reuse old definition, so as not to patch pine.h */
+	{char help_name[40];
+	 help_name[0] = '\0';
+	 for(t = h_texts; t->help_text != NO_HELP; t++)
+	   if(t->help_text == ((HELP_SCROLL_S *)sparms->proc.data.p)->help_source){
+	     strcpy(help_name,t->tag);
+	     break;
+	   }
+	 if(help_name[0])
+	   q_status_message1(SM_ORDER, 0, 2, 
+		"Internal Name: x-alpine-help:%s", help_name);
+	 else
+	   q_status_message(SM_ORDER|SM_DING, 1, 2, 
+		"Can not find link for text help");
+	}
 	break;
 
       case MC_FINISH :
@@ -572,7 +591,8 @@ help_bogus_input(UCS ch)
 int
 url_local_helper(char *url)
 {
-    if(!struncmp(url, "x-alpine-help:", 14) && *(url += 14)){
+    if((!struncmp(url, "x-alpine-help:", 14) && *(url += 14))
+	|| (!struncmp(url, "x-pine-help:", 12) && *(url += 12))){
 	char		   *frag;
 	HelpType	    newhelp;
 

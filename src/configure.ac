@@ -649,6 +649,7 @@ else
       elif test -f /etc/SuSE-release ; then
         alpine_SSLTYPE="nopwd"
         alpine_SSLDIR="/usr/share/ssl"
+        alpine_SSLCERTS="/etc/ssl/certs"
       elif test -d /etc/osso-af-init ; then
         alpine_SSLTYPE="nopwd"
         alpine_SSLDIR="/usr"
@@ -1387,10 +1388,6 @@ case "$host" in
       [
         alpine_c_client_target="osx"
       ])
-    AC_CHECK_HEADER(/usr/include/security/pam_appl.h,
-      [
-        alpine_c_client_target="oxs"
-      ])
     ;;
   *-*-solaris*)
     if test x$GCC = "xyes" ; then
@@ -1495,9 +1492,10 @@ case "$host" in
     ;;
   *-*-cygwin)
     systype="CYG"
-    alpine_path_delim="\\"
+    alpine_path_delim="\\\\"
     alpine_mode_readonly="(S_IREAD | S_IWRITE)"
     alpine_c_client_target="cyg"
+    LIBS="$LIBS $LIBINTL"
     ;;
   windows* | *-*-pw32*)
     systype="WNT"

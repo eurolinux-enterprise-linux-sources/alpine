@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: stream.c 1012 2008-03-26 00:44:22Z hubert@u.washingt
 /*
  * ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -3317,6 +3318,25 @@ streams_died(void)
     return(rv);
 }
 
+
+/* Some stream is locked checks to see if there is any stream for which we
+ * are in a callback from c-client
+ */
+
+int
+some_stream_is_locked(void)
+{
+    int rv = 0, i;
+    MAILSTREAM *m;
+
+    for(i = 0; rv == 0 && i < ps_global->s_pool.nstream; i++){
+	m = ps_global->s_pool.streams[i];
+	if(m && m->lock)
+	  rv++;
+     }
+
+    return(rv);
+}
 
 /*
  * Very simple version of appenduid_cb until we need something

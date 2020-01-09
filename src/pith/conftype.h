@@ -3,6 +3,7 @@
  *
  * ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -428,6 +429,7 @@ typedef enum {
 	F_TCAP_WINS,
 	F_ENABLE_SIGDASHES,
 	F_ENABLE_STRIP_SIGDASHES,
+	F_NEW_THREAD_ON_BLANK_SUBJECT,
 	F_QUELL_PARTIAL_FETCH,
 	F_QUELL_PERSONAL_NAME_PROMPT,
 	F_QUELL_USER_ID_PROMPT,

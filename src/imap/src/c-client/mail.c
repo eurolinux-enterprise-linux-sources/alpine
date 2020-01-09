@@ -5108,7 +5108,8 @@ void mail_thread_loadcache (MAILSTREAM *stream,unsigned long uid,OVERVIEW *ov,
 			    unsigned long msgno)
 {
   if (msgno && ov) {		/* just in case */
-    MESSAGECACHE telt;
+    MESSAGECACHE telt, *elt;
+    ENVELOPE *env;
     SORTCACHE *s = (SORTCACHE *) (*mailcache) (stream,msgno,CH_SORTCACHE);
     if (!s->subject && ov->subject) {
       s->refwd = mail_strip_subject (ov->subject,&s->subject);
@@ -5127,7 +5128,12 @@ void mail_thread_loadcache (MAILSTREAM *stream,unsigned long uid,OVERVIEW *ov,
       s->dirty = T;
     }
     if (!s->references &&
-	!(s->references = mail_thread_parse_references (ov->references,T))) {
+	!(s->references = mail_thread_parse_references (ov->references,T))
+	&& stream->dtb && !strcmp(stream->dtb->name, "imap")
+	&& (elt = mail_elt (stream, msgno)) != NULL
+	&& (env = elt->private.msg.env) != NULL 
+	&& env->in_reply_to
+	&& !(s->references = mail_thread_parse_references(env->in_reply_to, NIL))) {
 				/* don't do In-Reply-To with NNTP mailboxes */
       s->references = mail_newstringlist ();
       s->dirty = T;

@@ -383,7 +383,7 @@ long tcp_getdata (TCPSTREAM *stream)
     if (stream->pb.ioResult) {	/* punt if got an error */
       time_t tc = time (0);
       if ((stream->pb.ioResult == commandTimeout) && tmoh &&
-	  ((*tmoh) (tc - t,tc - tl))) continue;
+	  ((*tmoh) (tc - t,tc - tl, stream->host))) continue;
     				/* nuke connection */
       stream->pb.csCode = TCPAbort;
       abortpb->userDataPtr = NIL;

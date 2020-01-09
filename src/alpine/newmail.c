@@ -153,9 +153,9 @@ new_mail_mess(MAILSTREAM *stream, long int number, long int max_num, int for_new
     if(!for_new_mail_win)
       q_status_message5(SM_ASYNC | SM_DING, 0, 60,
 		      "%s%s%s%.80s%.80s", intro,
- 		      from ? ((number > 1L) ? " Most recent f" : " F") : "",
- 		      from ? "rom " : "",
- 		      from ? from : "",
+ 		      from && from[0] ? ((number > 1L) ? " Most recent f" : " F") : "",
+ 		      from && from[0] ? "rom " : "",
+ 		      from && from[0] ? from : "",
 		      subjtext);
 #if (!defined(DOS) && !defined(OS2) && !defined(LEAVEOUTFIFO)) || defined(_WINDOWS)
     else {
@@ -193,9 +193,9 @@ new_mail_mess(MAILSTREAM *stream, long int number, long int max_num, int for_new
 	}
 	else
 	  snprintf(tmp_20k_buf, SIZEOF_20KBUF, "%s%s%s%.80s", intro,
-		   from ? ((number > 1L) ? " Most recent f" : " F") : "",
-		   from ? "rom " : "",
-		   from ? from : "");
+		   from && from[0] ? ((number > 1L) ? " Most recent f" : " F") : "",
+		   from && from[0] ? "rom " : "",
+		   from && from[0] ? from : "");
 
 	(*pith_opt_icon_text)(tmp_20k_buf, IT_NEWMAIL);
     }

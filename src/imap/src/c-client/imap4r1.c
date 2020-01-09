@@ -3719,8 +3719,8 @@ void imap_parse_unsolicited (MAILSTREAM *stream,IMAPPARSEDREPLY *reply)
       mail_expunged (stream,msgno);
     }
 
-    else if ((!strcmp (s,"FETCH") || !strcmp (s,"STORE")) && t &&
-	msgno && (msgno <= stream->nmsgs)) {
+    else if ((!strcmp (s,"FETCH") || !strcmp (s,"STORE")) &&
+	     msgno && (msgno <= stream->nmsgs)) {
       char *prop;
       GETS_DATA md;
       ENVELOPE **e;
@@ -3731,11 +3731,7 @@ void imap_parse_unsolicited (MAILSTREAM *stream,IMAPPARSEDREPLY *reply)
       ++t;			/* skip past open parenthesis */
 				/* parse Lisp-form property list */
       while (prop = (strtok_r (t," )",&r))) {
-	if((t = strtok_r (NIL,"\n",&r)) == NIL){
-	  mm_notify (stream,"Missing data for property", WARN);
-	  stream->unhealthy = T;
-	  continue;
-	}
+	t = strtok_r (NIL,"\n",&r);
 	INIT_GETS (md,stream,elt->msgno,NIL,0,0);
 	e = NIL;		/* not pointing at any envelope yet */
 				/* canonicalize property, parse it */
@@ -4531,6 +4527,7 @@ void imap_parse_header (MAILSTREAM *stream,ENVELOPE **env,SIZEDTEXT *hdr,
   if (*env) {			/* need to merge this header into envelope? */
     if (!(*env)->newsgroups) {	/* need Newsgroups? */
       (*env)->newsgroups = nenv->newsgroups;
+      (*env)->ngpathexists = nenv->ngpathexists;
       nenv->newsgroups = NIL;
     }
     if (!(*env)->followup_to) {	/* need Followup-To? */
@@ -4585,6 +4582,7 @@ void imap_parse_envelope (MAILSTREAM *stream,ENVELOPE **env,
     if (oenv) {			/* need to merge old envelope? */
       (*env)->newsgroups = oenv->newsgroups;
       oenv->newsgroups = NIL;
+      (*env)->ngpathexists = oenv->ngpathexists;
       (*env)->followup_to = oenv->followup_to;
       oenv->followup_to = NIL;
       (*env)->references = oenv->references;

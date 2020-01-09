@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: mailcmd.c 1142 2008-08-13 17:22:21Z hubert@u.washing
 /*
  * ========================================================================
  * Copyright 2006-2007 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -400,6 +401,7 @@ do_broach_folder(char *newfolder, CONTEXT_S *new_context, MAILSTREAM **streamp,
                 do_reopen = 0, n, was_dead = 0, cur_already_set = 0;
     char        expanded_file[MAX(MAXPATH,MAILTMPLEN)+1],
 	       *old_folder, *old_path, *p, *report;
+    unsigned char *fname;
     long        openmode, rflags = 0L, pc = 0L, cur, raw;
     ENVELOPE   *env = NULL;
     char        status_msg[81];
@@ -562,10 +564,14 @@ do_broach_folder(char *newfolder, CONTEXT_S *new_context, MAILSTREAM **streamp,
 	else if((new_context->use & CNTXT_INCMNG)
 		&& (folder_index(newfolder, new_context, FI_FOLDER) < 0)
 		&& !is_absolute_path(newfolder)){
+	    fname = folder_name_decoded((unsigned char *)newfolder);
 	    q_status_message1(SM_ORDER, 3, 4,
-			    _("Can't find Incoming Folder %s."), newfolder);
+			    _("Can't find Incoming Folder %s."), fname ? (char *) fname : newfolder);
 	    if(stream)
 	      pine_mail_close(stream);
+
+	    if(fname)
+		fs_give((void **)&fname);
 
 	    return(0);
 	}
@@ -748,8 +754,10 @@ do_broach_folder(char *newfolder, CONTEXT_S *new_context, MAILSTREAM **streamp,
     }
 
     snprintf(status_msg, sizeof(status_msg), "%sOpening \"", do_reopen ? "Re-" : "");
-    strncat(status_msg, pretty_fn(newfolder),
+    fname = folder_name_decoded((unsigned char *)newfolder);
+    strncat(status_msg, pretty_fn(fname ? (char*) fname : newfolder),
 	    sizeof(status_msg)-strlen(status_msg) - 2);
+    if(fname) fs_give((void **)&fname);
     status_msg[sizeof(status_msg)-2] = '\0';
     strncat(status_msg, "\"", sizeof(status_msg)-strlen(status_msg) - 1);
     status_msg[sizeof(status_msg)-1] = '\0';
@@ -770,6 +778,11 @@ do_broach_folder(char *newfolder, CONTEXT_S *new_context, MAILSTREAM **streamp,
 
     if(stream)
       sp_set_first_unseen(stream, 0L);
+
+    /* in case we closed the old stream by cancelling the connection, do
+     * not let that interfere with opening the new stream.
+     */
+    ps_global->user_says_cancel = 0;
 
     m = context_open((new_context && !open_inbox) ? new_context : NULL,
 		     stream, 
@@ -864,8 +877,11 @@ do_broach_folder(char *newfolder, CONTEXT_S *new_context, MAILSTREAM **streamp,
 				       ps_global->msgmap, SRT_NON);
 		    }
 
+		    fname = folder_name_decoded((unsigned char *)old_folder);
                     q_status_message1(SM_ORDER, 0, 3,
-				      "Folder \"%s\" reopened", old_folder);
+				      "Folder \"%s\" reopened", fname ? (char *)fname : old_folder);
+		    if(fname)
+		      fs_give((void **)&fname);
                 }
             }
 
@@ -1009,11 +1025,13 @@ do_broach_folder(char *newfolder, CONTEXT_S *new_context, MAILSTREAM **streamp,
       refresh_sort(ps_global->mail_stream, ps_global->msgmap, SRT_NON);
 
     report = new_messages_string(ps_global->mail_stream);
+    fname = folder_name_decoded((unsigned char *)newfolder);
     q_status_message7(SM_ORDER, 0, 4,
 		    "%s \"%s\" opened with %s message%s%s%s%s",
 			IS_NEWS(ps_global->mail_stream)
 			  ? "News group" : "Folder",
-			open_inbox ? pretty_fn(newfolder) : newfolder,
+			open_inbox ? pretty_fn(fname ? (char *) fname : newfolder) 
+				   : (fname ? (char *)fname : newfolder),
 			comatose(mn_get_total(ps_global->msgmap)),
 			plural(mn_get_total(ps_global->msgmap)),
 			(!open_inbox
@@ -1022,6 +1040,9 @@ do_broach_folder(char *newfolder, CONTEXT_S *new_context, MAILSTREAM **streamp,
 			READONLY_FOLDER(ps_global->mail_stream)
 						? " READONLY" : "",
 			report ? report : "");
+
+   if(fname)
+     fs_give((void **)&fname);
 
    if(report)
      fs_give((void **)&report);
@@ -2158,8 +2179,8 @@ unzoom_index(struct pine *state, MAILSTREAM *stream, MSGNO_S *msgmap)
 
 
 int
-agg_text_select(MAILSTREAM *stream, MSGNO_S *msgmap, char type, int not,
-		int check_for_my_addresses,
+agg_text_select(MAILSTREAM *stream, MSGNO_S *msgmap, char type, char *namehdr,
+		int not, int check_for_my_addresses,
 		char *sstring, char *charset, SEARCHSET **limitsrch)
 {
     int		 old_imap, we_cancel;
@@ -2308,6 +2329,10 @@ agg_text_select(MAILSTREAM *stream, MSGNO_S *msgmap, char type, int not,
 
   if(!mepgm)
     switch(type){
+      case 'h' :	                        /* Any header */
+        pgm->header = mail_newsearchheader (namehdr, sstring);
+      break;
+
       case 'r' :				/* TO or CC */
 	if(old_imap){
 	    /* No OR on old servers */

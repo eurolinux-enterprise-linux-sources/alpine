@@ -685,6 +685,7 @@ ADDRESS {
 /* Message envelope */
 
 typedef struct mail_envelope {
+  unsigned int ngpathexists : 1;	/* newsgroups may be bogus */
   unsigned int incomplete : 1;	/* envelope may be incomplete */
   unsigned int imapenvonly : 1;	/* envelope only has IMAP envelope */
   char *remail;			/* remail header if any */
@@ -1302,7 +1303,7 @@ typedef char *(*readprogress_t) (GETS_DATA *md,unsigned long octets);
 typedef void *(*mailcache_t) (MAILSTREAM *stream,unsigned long msgno,long op);
 typedef long (*mailproxycopy_t) (MAILSTREAM *stream,char *sequence,
 				 char *mailbox,long options);
-typedef long (*tcptimeout_t) (long overall,long last);
+typedef long (*tcptimeout_t) (long overall,long last, char *host);
 typedef void *(*authchallenge_t) (void *stream,unsigned long *len);
 typedef long (*authrespond_t) (void *stream,char *s,unsigned long size);
 typedef long (*authcheck_t) (void);

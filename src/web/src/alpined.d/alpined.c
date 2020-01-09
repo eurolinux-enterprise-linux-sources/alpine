@@ -6908,7 +6908,7 @@ peSelectText(Tcl_Interp *interp, int objc, Tcl_Obj **objv, int matchflag)
 		    /* BUG: fix charset not to be NULL below */
 		    if(agg_text_select(ps_global->mail_stream,
 				       sp_msgmap(ps_global->mail_stream),
-				       field, not, 0, text, NULL, NULL))
+				       field, NULL, not, 0, text, NULL, NULL))
 		      /* BUG: plug in "charset" above? */
 		      return(peSelectError(interp, "programmer botch"));
 		}

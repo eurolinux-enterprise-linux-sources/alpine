@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: titlebar.c 1075 2008-06-04 00:19:39Z hubert@u.washin
 /*
  * ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +28,7 @@ static char rcsid[] = "$Id: titlebar.c 1075 2008-06-04 00:19:39Z hubert@u.washin
 #include "../pith/sort.h"
 #include "../pith/news.h"
 #include "../pith/util.h"
-
+#include "../pith/folder.h"
 
 /*
  * Internal prototypes
@@ -233,10 +234,13 @@ set_titlebar(char *title, MAILSTREAM *stream, CONTEXT_S *cntxt, char *folder,
       fs_give((void **)&as.folder_name);
 
     if(folder){
+	unsigned char *fname;
+	fname = folder_name_decoded((unsigned char *) folder);
 	if(!strucmp(folder, ps_global->inbox_name) && cntxt == ps_global->context_list)
-	  as.folder_name = cpystr(pretty_fn(folder));
+	  as.folder_name = cpystr(pretty_fn(fname ? (char *) fname : folder));
 	else
-	  as.folder_name = cpystr(folder);
+	  as.folder_name = cpystr(fname ? (char *) fname : folder);
+	if(fname) fs_give((void **)&fname);
     }
 
     if(!as.folder_name)
@@ -444,9 +448,7 @@ format_titlebar(void)
 
     is_context        = as.context_name ? strlen(as.context_name) : 0;
 
-    {char revision[10];
-    snprintf(version, sizeof(version), "ALPINE %s(%s)", ALPINE_VERSION, get_alpine_revision_number(revision, sizeof(revision)));
-    }
+    snprintf(version, sizeof(version), "ALPINE %s", ALPINE_VERSION);
     version[sizeof(version)-1] = '\0';
     ver_len = (int) utf8_width(version);	/* fixed version field width */
 

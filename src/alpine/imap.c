@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: imap.c 1266 2009-07-14 18:39:12Z hubert@u.washington
 /*
  * ========================================================================
  * Copyright 2006-2009 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +47,9 @@ static char rcsid[] = "$Id: imap.c 1266 2009-07-14 18:39:12Z hubert@u.washington
 #include "../pith/util.h"
 #include "../pith/list.h"
 #include "../pith/margin.h"
+#ifdef SMIME
+#include "../pith/smime.h"
+#endif /* SMIME */
 
 #if	(WINCRED > 0)
 #include <wincred.h>
@@ -94,7 +98,7 @@ static int storepassprompt = -1;
  * Internal prototypes
  */
 void  mm_login_alt_cue(NETMBX *);
-long  pine_tcptimeout_noscreen(long, long);
+long  pine_tcptimeout_noscreen(long, long, char *);
 int   answer_cert_failure(int, MSGNO_S *, SCROLL_S *);
 
 #ifdef	LOCAL_PASSWD_CACHE
@@ -105,12 +109,14 @@ void  update_passfile_hostlist(char *, char *, STRLIST_S *, int);
 
 static	MMLOGIN_S	*passfile_cache = NULL;
 static  int             using_passfile = -1;
+int  save_password = 1;
 #endif	/* LOCAL_PASSWD_CACHE */
 
 #ifdef	PASSFILE
 char  xlate_in(int);
 char  xlate_out(char);
 char *passfile_name(char *, char *, size_t);
+int  line_get(char *, size_t, char **);
 #endif	/* PASSFILE */
 
 #if	(WINCRED > 0)
@@ -350,6 +356,7 @@ mm_login_work(NETMBX *mb, char *user, char *pwd, long int trial,
     HelpType  help ;
     int       len, rc, q_line, flags;
     int       oespace, avail, need, save_dont_use;
+    int       save_in_init;
     struct servent *sv;
 #if defined(_WINDOWS) || defined(LOCAL_PASSWD_CACHE)
     int       preserve_password = -1;
@@ -364,6 +371,8 @@ mm_login_work(NETMBX *mb, char *user, char *pwd, long int trial,
 	       altuserforcache ? altuserforcache : ""));
     q_line = -(ps_global->ttyo ? ps_global->ttyo->footer_rows : 3);
 
+    save_in_init = ps_global->in_init_seq;
+    ps_global->in_init_seq = 0;
     ps_global->no_newmail_check_from_optionally_enter = 1;
 
     /* make sure errors are seen */
@@ -443,6 +452,7 @@ mm_login_work(NETMBX *mb, char *user, char *pwd, long int trial,
 	   (mb->sslflag||mb->tlsflag))){
 	    dprint((9, "mm_login: found a password to try\n"));
 	    ps_global->no_newmail_check_from_optionally_enter = 0;
+	    ps_global->in_init_seq = save_in_init;
 	    return;
 	}
 
@@ -456,6 +466,7 @@ mm_login_work(NETMBX *mb, char *user, char *pwd, long int trial,
 				     (mb->sslflag||mb->tlsflag));
 	    dprint((9, "mm_login: found a password in passfile to try\n"));
 	    ps_global->no_newmail_check_from_optionally_enter = 0;
+	    ps_global->in_init_seq = save_in_init;
 	    return;
 	}
 #endif	/* LOCAL_PASSWD_CACHE */
@@ -484,6 +495,7 @@ mm_login_work(NETMBX *mb, char *user, char *pwd, long int trial,
 		       "mm_login: found a password for user=%s to try\n",
 		       user ? user : "?"));
 		ps_global->no_newmail_check_from_optionally_enter = 0;
+		ps_global->in_init_seq = save_in_init;
 		return;
 	    }
 
@@ -499,6 +511,7 @@ mm_login_work(NETMBX *mb, char *user, char *pwd, long int trial,
 		  "mm_login: found a password for user=%s in passfile to try\n",
 		  user ? user : "?"));
 		ps_global->no_newmail_check_from_optionally_enter = 0;
+		ps_global->in_init_seq = save_in_init;
 		return;
 	    }
 #endif	/* LOCAL_PASSWD_CACHE */
@@ -519,6 +532,7 @@ mm_login_work(NETMBX *mb, char *user, char *pwd, long int trial,
 	       (mb->sslflag||mb->tlsflag))){
 		dprint((9, "mm_login:ui: found a password to try\n"));
 		ps_global->no_newmail_check_from_optionally_enter = 0;
+		ps_global->in_init_seq = save_in_init;
 		return;
 	    }
 
@@ -532,6 +546,7 @@ mm_login_work(NETMBX *mb, char *user, char *pwd, long int trial,
 					 (mb->sslflag||mb->tlsflag));
 		dprint((9, "mm_login:ui: found a password in passfile to try\n"));
 		ps_global->no_newmail_check_from_optionally_enter = 0;
+		ps_global->in_init_seq = save_in_init;
 		return;
 	    }
 #endif	/* LOCAL_PASSWD_CACHE */
@@ -750,6 +765,7 @@ mm_login_work(NETMBX *mb, char *user, char *pwd, long int trial,
 
     if(!(user[0] || altuserforcache)){
 	ps_global->no_newmail_check_from_optionally_enter = 0;
+	ps_global->in_init_seq = save_in_init;
 	return;
     }
 
@@ -762,6 +778,7 @@ mm_login_work(NETMBX *mb, char *user, char *pwd, long int trial,
 	if(imap_get_passwd(mm_login_list, pwd, user, hostlist,
 	   (mb->sslflag||mb->tlsflag))){
 	    ps_global->no_newmail_check_from_optionally_enter = 0;
+	    ps_global->in_init_seq = save_in_init;
 	    return;
 	}
 
@@ -771,6 +788,7 @@ mm_login_work(NETMBX *mb, char *user, char *pwd, long int trial,
 	    imap_set_passwd(&mm_login_list, pwd, user,
 			    hostlist, (mb->sslflag||mb->tlsflag), 0, 0);
 	    ps_global->no_newmail_check_from_optionally_enter = 0;
+	    ps_global->in_init_seq = save_in_init;
 	    return;
 	}
 #endif	/* LOCAL_PASSWD_CACHE */
@@ -779,6 +797,7 @@ mm_login_work(NETMBX *mb, char *user, char *pwd, long int trial,
 	if(imap_get_passwd(mm_login_list, pwd, altuserforcache, hostlist,
 	   (mb->sslflag||mb->tlsflag))){
 	    ps_global->no_newmail_check_from_optionally_enter = 0;
+	    ps_global->in_init_seq = save_in_init;
 	    return;
 	}
 
@@ -788,6 +807,7 @@ mm_login_work(NETMBX *mb, char *user, char *pwd, long int trial,
 	    imap_set_passwd(&mm_login_list, pwd, altuserforcache,
 			    hostlist, (mb->sslflag||mb->tlsflag), 0, 0);
 	    ps_global->no_newmail_check_from_optionally_enter = 0;
+	    ps_global->in_init_seq = save_in_init;
 	    return;
 	}
 #endif	/* LOCAL_PASSWD_CACHE */
@@ -976,6 +996,7 @@ mm_login_work(NETMBX *mb, char *user, char *pwd, long int trial,
 	ps_global->user_says_cancel = (rc == 1);
         user[0] = pwd[0] = '\0';
 	ps_global->no_newmail_check_from_optionally_enter = 0;
+	ps_global->in_init_seq = save_in_init;
         return;
     }
 
@@ -989,7 +1010,8 @@ mm_login_work(NETMBX *mb, char *user, char *pwd, long int trial,
 		      (mb->sslflag||mb->tlsflag), 0, 0);
 #ifdef	LOCAL_PASSWD_CACHE
     /* if requested, remember it on disk for next session */
-    set_passfile_passwd(ps_global->pinerc, pwd,
+    if(save_password)
+      set_passfile_passwd(ps_global->pinerc, pwd,
 		        altuserforcache ? altuserforcache : user, hostlist,
 			(mb->sslflag||mb->tlsflag),
 			(preserve_password == -1 ? 0
@@ -1181,7 +1203,7 @@ mm_diskerror (MAILSTREAM *stream, long int errcode, long int serious)
 
 
 long
-pine_tcptimeout_noscreen(long int elapsed, long int sincelast)
+pine_tcptimeout_noscreen(long int elapsed, long int sincelast, char *host)
 {
     long rv = 1L;
     char pmt[128];
@@ -1192,8 +1214,8 @@ pine_tcptimeout_noscreen(long int elapsed, long int sincelast)
 
     if(elapsed >= (long)ps_global->tcp_query_timeout){
 	snprintf(pmt, sizeof(pmt),
-	 _("Waited %s seconds for server reply.  Break connection to server"),
-		long2string(elapsed));
+	 _("No reply in %s seconds from server %s. Break connection"),
+		long2string(elapsed), host);
 	pmt[sizeof(pmt)-1] = '\0';
 	if(want_to(pmt, 'n', 'n', NO_HELP, WT_FLUSH_IN) == 'y'){
 	  ps_global->user_says_cancel = 1;
@@ -1216,7 +1238,7 @@ pine_tcptimeout_noscreen(long int elapsed, long int sincelast)
  * pine_tcptimeout - C-client callback to handle tcp-related timeouts.
  */
 long
-pine_tcptimeout(long int elapsed, long int sincelast)
+pine_tcptimeout(long int elapsed, long int sincelast, char *host)
 {
     long rv = 1L;			/* keep trying by default */
     unsigned long ch;
@@ -1236,7 +1258,7 @@ pine_tcptimeout(long int elapsed, long int sincelast)
       return(rv);
 
     if(!ps_global->ttyo)
-      return(pine_tcptimeout_noscreen(elapsed, sincelast));
+      return(pine_tcptimeout_noscreen(elapsed, sincelast, host));
 
     suspend_busy_cue();
     
@@ -1253,9 +1275,9 @@ pine_tcptimeout(long int elapsed, long int sincelast)
 
 	Writechar(BELL, 0);
 
-	PutLine1(ps_global->ttyo->screen_rows - FOOTER_ROWS(ps_global), 0,
-       _("Waited %s seconds for server reply.  Break connection to server? "),
-	   long2string(elapsed));
+	PutLine2(ps_global->ttyo->screen_rows - FOOTER_ROWS(ps_global), 0,
+	 _("No reply in %s seconds from server %s. Break connection?"),
+	   long2string(elapsed), host);
 	CleartoEOLN();
 	fflush(stdout);
 	flush_input();
@@ -1272,9 +1294,9 @@ pine_tcptimeout(long int elapsed, long int sincelast)
     }
 
     if(rv == 1L){			/* just warn 'em something's up */
-	q_status_message1(SM_ORDER, 0, 0,
-		  _("Waited %s seconds for server reply.  Still Waiting..."),
-		  long2string(elapsed));
+	q_status_message2(SM_ORDER, 0, 0,
+	 _("No reply in %s seconds from server %s. Still Waiting..."),
+		  long2string(elapsed), host);
 	flush_status_messages(0);	/* make sure it's seen */
     }
 
@@ -1285,6 +1307,30 @@ pine_tcptimeout(long int elapsed, long int sincelast)
     return(rv);
 }
 
+QUOTALIST *pine_quotalist_copy (QUOTALIST *pquota)
+{
+  QUOTALIST *cquota = NULL;
+
+  if(pquota){
+     cquota = mail_newquotalist();
+     if (pquota->name && *pquota->name)
+	cquota->name = cpystr(pquota->name);
+     cquota->usage = pquota->usage;
+     cquota->limit = pquota->limit;
+     if (pquota->next)
+        cquota->next = pine_quotalist_copy(pquota->next);
+  }
+  return cquota;
+}
+
+
+/* c-client callback to handle quota */
+
+void
+pine_parse_quota (MAILSTREAM *stream, unsigned char *msg, QUOTALIST *pquota)
+{
+   ps_global->quota = pine_quotalist_copy (pquota);
+} 
 
 /*
  * C-client callback to handle SSL/TLS certificate validation failures
@@ -1997,6 +2043,32 @@ passfile_name(char *pinerc, char *path, size_t len)
 
 #ifdef	LOCAL_PASSWD_CACHE
 
+
+int 
+line_get(char *tmp, size_t len, char **textp)
+{
+  char *s, c;
+
+  tmp[0] = '\0';
+  if (*textp == NULL)
+    return 0;
+  s = strchr(*textp, '\n');
+  if(s != NULL){
+     *s = '\0';
+     if(*(s-1) == '\r')
+	*(s-1) = '\0';
+     if(strlen(*textp) < len - 1)
+	strcpy(tmp, *textp);
+     else
+	return 0;
+     strcat(tmp, "\n");
+     *textp = s+1;
+  }
+  else
+     return 0;
+
+  return 1;
+}
 /*
  * For UNIX:
  * Passfile lines are
@@ -2284,6 +2356,11 @@ read_passfile(pinerc, l)
 
     char  tmp[MAILTMPLEN], *ui[5];
     int   i, j, n;
+#ifdef SMIME
+    char tmp2[MAILTMPLEN];
+    char *text = NULL, *text2 = NULL;
+    int encrypted = 0;
+#endif /* SMIME */
     FILE *fp;
 
     if(using_passfile == 0)
@@ -2297,8 +2374,54 @@ read_passfile(pinerc, l)
 	return(using_passfile);
     };
 
+#ifdef SMIME
+    tmp2[0] = '\0';
+    fgets(tmp2, sizeof(tmp2), fp);
+    if(strcmp(tmp2, "-----BEGIN PKCS7-----\n")){
+       fclose(fp);
+       if(encrypt_file(tmp, NULL))
+	  encrypted++;
+    }
+    else{
+       fclose(fp);
+       encrypted++;
+    }
+
+    /* 
+     * if password file is encrypted we attemtp to decrypt. We ask the 
+     * user for the password to unlock the password file. If the user 
+     * enters the password and it unlocks the file, use it and keep saving 
+     * passwords in it. If the user enters the wrong passwords and does 
+     * not unlock it, we will not see that here, but in decrypt_file, so 
+     * the only other possibility is that the user cancels. In that case 
+     * we will see i == -1. In that case, we will let the user attempt 
+     * manual login to the server they want to login, but passwords will 
+     * not be saved so that the password file will not be saved 
+     * unencrypted and rewritten again.
+     */
+    if(encrypted){
+	text = text2 = decrypt_file(tmp, &i);
+	switch(i){
+	   case 1 : save_password = 1;
+		    break;
+
+	   case -1: save_password = 0;
+		    break;
+
+	   default: break;
+	}
+    }
+    else
+       fp = our_fopen(tmp, "rb");	/* reopen to read data */
+#endif /* SMIME */
+
     using_passfile = 1;
+#ifdef SMIME
+    for(n = 0; encrypted ? line_get(tmp, sizeof(tmp), &text2) 
+	: (fgets(tmp, sizeof(tmp), fp) != NULL); n++){
+#else /* SMIME */
     for(n = 0; fgets(tmp, sizeof(tmp), fp); n++){
+#endif /* SMIME */
 	/*** do any necessary DEcryption here ***/
 	xlate_key = n;
 	for(i = 0; tmp[i]; i++)
@@ -2336,7 +2459,11 @@ read_passfile(pinerc, l)
 	}
     }
 
+#ifdef SMIME
+    if (text) fs_give((void **)&text);
+#else /* SMIME */
     fclose(fp);
+#endif /* SMIME */
     return(1);
 #endif /* PASSFILE */
 }
@@ -2454,6 +2581,10 @@ write_passfile(pinerc, l)
     char  tmp[MAILTMPLEN];
     int   i, n;
     FILE *fp;
+#ifdef SMIME
+    char *text = NULL, tmp2[MAILTMPLEN];
+    int len = 0;
+#endif
 
     if(using_passfile == 0)
       return;
@@ -2465,6 +2596,10 @@ write_passfile(pinerc, l)
 	using_passfile = 0;
         return;
     }
+
+#ifdef SMIME
+    strcpy(tmp2, tmp);
+#endif /* SMIME */
 
     for(n = 0; l; l = l->next, n++){
 	/*** do any necessary ENcryption here ***/
@@ -2478,10 +2613,32 @@ write_passfile(pinerc, l)
 	for(i = 0; tmp[i]; i++)
 	  tmp[i] = xlate_in(tmp[i]);
 
+#ifdef SMIME
+        if(len == 0){
+	   len = strlen(tmp) + 1;
+	   text = fs_get(len*sizeof(char));
+	   *text = '\0';
+	}
+	if(strlen(text) + strlen(tmp) > len){
+	   len = strlen(text) + strlen(tmp) + 1;
+	   fs_resize((void **)&text, len*sizeof(char));
+	}
+	strcat(text, tmp);
+#else /* SMIME */
 	fputs(tmp, fp);
+#endif /* SMIME */
     }
 
     fclose(fp);
+#ifdef SMIME
+    if(encrypt_file(tmp2, text) == 0){
+	if((fp = our_fopen(tmp2, "wb")) != NULL){
+	   fputs(text, fp);
+	   fclose(fp);
+	}
+    }
+    fs_give((void **)&text);
+#endif /* SMIME */
 #endif /* PASSFILE */
 }
 

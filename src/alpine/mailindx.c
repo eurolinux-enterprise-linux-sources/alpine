@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: mailindx.c 1142 2008-08-13 17:22:21Z hubert@u.washin
 /*
  * ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -319,7 +320,7 @@ index_lister(struct pine *state, CONTEXT_S *cntxt, char *folder, MAILSTREAM *str
     UCS          ch;
     int		 cmd, which_keys, force,
 		 cur_row, cur_col, km_popped, paint_status;
-    int          old_day = -1;
+    static int   old_day = -1;
     long	 i, j, k, old_max_msgno;
     char        *utf8str;
     IndexType    style, old_style = MsgIndex;
@@ -395,7 +396,7 @@ index_lister(struct pine *state, CONTEXT_S *cntxt, char *folder, MAILSTREAM *str
 	    rfc822_date(db);
 	    parse_date(db, &nnow);
 	    if(old_day != -1 && nnow.day != old_day){
-		clear_index_cache(stream, IC_CLEAR_WIDTHS_DONE);
+		clear_index_cache(stream, 0);
 		state->mangled_body = 1;
 	    }
 
@@ -923,6 +924,8 @@ view_a_thread:
 	    reset_index_border();
 	    break;
 
+	  case MC_QUOTA:
+	    cmd_quota(state);
 
             /*---------- Redraw ----------*/
 	  case MC_REPAINT :

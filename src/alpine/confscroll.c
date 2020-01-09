@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: confscroll.c 1169 2008-08-27 06:42:06Z hubert@u.wash
 /*
  * ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -3034,6 +3035,9 @@ update_option_screen(struct pine *ps, OPT_SCREEN_S *screen, Pos *cursor_pos)
     int		   last_selectable;
     mswin_beginupdate();
 #endif
+    if(screen == NULL)
+       return;
+
     if(cursor_pos){
 	cursor_pos->col = 0;
 	cursor_pos->row = -1;		/* to tell us if we've set it yet */

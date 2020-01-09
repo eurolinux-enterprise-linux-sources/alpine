@@ -89,10 +89,12 @@ input_ready(int time_out)
          }
 
          if(res == 0){ /* the select timed out */
+#ifndef __CYGWIN__
 	     if(getppid() == 1){
 		 /* Parent is init! */
 	         return(BAIL_OUT);
 	     }
+#endif
 	       
 	     /*
 	      * "15" is the minimum allowed mail check interval.

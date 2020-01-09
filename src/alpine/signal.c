@@ -4,6 +4,7 @@ static char rcsid[] = "$Id: signal.c 1025 2008-04-08 22:59:38Z hubert@u.washingt
 
 /* ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -819,8 +820,10 @@ do_suspend(void)
 #else
     if(F_ON(F_SUSPEND_SPAWNS, ps_global)){
 	PIPE_S *syspipe;
+	int flag = some_stream_is_locked() ? PIPE_NONEWMAIL : 0;
 
-	if((syspipe = open_system_pipe(NULL, NULL, NULL, PIPE_USER|PIPE_RESET,
+	flag |= PIPE_USER|PIPE_RESET;
+	if((syspipe = open_system_pipe(NULL, NULL, NULL, flag,
 				      0, pipe_callback, pipe_report_error)) != NULL){
 	    suspend_notice("exit");
 #ifndef	SIGCHLD
@@ -867,7 +870,8 @@ do_suspend(void)
 			_("Error loading \"%s\""), shell);
 #endif
 
-    if(isremote && !pine_mail_ping(ps_global->mail_stream))
+    if(isremote && !ps_global->mail_stream->lock 
+		&& !pine_mail_ping(ps_global->mail_stream))
       q_status_message(SM_ORDER | SM_DING, 4, 9,
 		       _("Suspended for too long, IMAP connection broken"));
 

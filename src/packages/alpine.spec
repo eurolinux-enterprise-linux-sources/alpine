@@ -1,21 +1,21 @@
-Summary: University of Washington Pine mail user agent
+Summary: University of Washington Alpine mail user agent
 Name: alpine
-Version: 2.01
+Version: 2.10
 Release: 1
 License: Apache License
 Group: Applications/Mail
-Source: ftp://ftp.cac.washington.edu/alpine/%{name}-%{version}.tar.gz
-URL: http://www.washington.edu/alpine
-Vendor: University of Washington
-Packager: Alpine Team <alpine-contact@u.washington.edu>
+Source: http://patches.freeiz.com/alpine/patches/%{name}-%{version}/%{name}-%{version}.clean.tar.lzma
+URL: http://patches.freeiz.com/alpine/
+Vendor: Patches for Pine and Alpine
+Packager: Eduardo Chappa <chappa@gmx.com>
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 
 %description
 Alpine -- an Alternatively Licensed Program for Internet
 News & Email -- is a tool for reading, sending, and managing
 electronic messages.  Alpine is the successor to Pine and was
-developed by Computing & Communications at the University of
-Washington.  
+developed until 2008 by Computing & Communications at the 
+University of Washington. 
   Though originally designed for inexperienced email users,
 Alpine supports many advanced features, and an ever-growing number of
 configuration and personal-preference options.

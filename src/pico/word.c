@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: word.c 769 2007-10-24 00:15:40Z hubert@u.washington.
 /*
  * ========================================================================
  * Copyright 2006-2007 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -900,13 +901,11 @@ fillregion(UCS *qstr, REGION *addedregion)
 
 	    if(!spaces)
 	      spaces++;
-	    same_word = 0;
 	    break;
 
 	  case TAB :
 	  case ' ' :
 	    spaces++;
-	    same_word = 0;
 	    break;
 
 	  default :
@@ -915,6 +914,7 @@ fillregion(UCS *qstr, REGION *addedregion)
 		   && line_len + word_len + 1 > fillcol
 		   && ((ucs4_isspace(line_last))
 		       || (linsert(1, ' ')))
+		   && same_word == 0
 		   && (line_len = fpnewline(qstr)))
 		  line_last = ' ';	/* no word-flush space! */
 
@@ -933,7 +933,7 @@ fillregion(UCS *qstr, REGION *addedregion)
 			line_len += 2;
 		    }
 
-		    word_len = word_ind = 0;
+		    same_word = word_len = word_ind = 0;
 		}
 
 		spaces = 0;
@@ -941,12 +941,12 @@ fillregion(UCS *qstr, REGION *addedregion)
 
 	    if(word_ind + 1 >= NSTRING){
 		/* Magic!  Fake that we output a wrapped word */
-		if((line_len - qlen > 0) && !same_word++){
+		if((line_len - qlen > 0) && same_word == 0){
 		    if(!ucs4_isspace(line_last))
 		      linsert(1, ' ');
 		    line_len = fpnewline(qstr);
 		}
-
+		same_word = 1;
 		line_len += word_len;
 		for(j = 0; j < word_ind; j++)
 		  linsert(1, word[j]);
@@ -964,7 +964,7 @@ fillregion(UCS *qstr, REGION *addedregion)
     }
 
     if(word_len){
-	if((line_len - qlen > 0) && (line_len + word_len + 1 > fillcol)){
+	if((line_len - qlen > 0) && (line_len + word_len + 1 > fillcol) && same_word == 0){
 	    if(!ucs4_isspace(line_last))
 	      linsert(1, ' ');
 	    (void) fpnewline(qstr);

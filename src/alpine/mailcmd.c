@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: mailcmd.c 1266 2009-07-14 18:39:12Z hubert@u.washing
 /*
  * ========================================================================
  * Copyright 2006-2009 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -253,6 +254,7 @@ static ESCKEY_S sel_text_opt[] = {
     {'r', 'r', "R", N_("Recipient")},
     {'p', 'p', "P", N_("Participant")},
     {'b', 'b', "B", N_("Body")},
+    {'h', 'h', "H", N_("Header")},
     {-1, 0, NULL, NULL}
 };
 
@@ -5391,8 +5393,12 @@ broach_folder(int qline, int allow_list, int *notrealinbox, CONTEXT_S **context)
 			  ? ps_global->last_unambig_folder
 			  : ((tc->last_folder[0]) ? tc->last_folder : NULL);
 
-	if(last_folder)
-	  snprintf(expanded, sizeof(expanded), " [%.*s]", sizeof(expanded)-5, last_folder);
+	if(last_folder){
+	  unsigned char *fname = folder_name_decoded((unsigned char *)last_folder);
+	  snprintf(expanded, sizeof(expanded), " [%.*s]", sizeof(expanded)-5, 
+					fname ? (char *) fname : last_folder);
+	  if(fname) fs_give((void **)&fname);
+	}
 	else
 	  *expanded = '\0';
 
@@ -7676,7 +7682,7 @@ select_by_text(MAILSTREAM *stream, MSGNO_S *msgmap, long int msgno, SEARCHSET **
     int          not = 0, me = 0;
     char         sstring[80], savedsstring[80], tmp[128];
     char        *p, *sval = NULL;
-    char         buftmp[MAILTMPLEN];
+    char         buftmp[MAILTMPLEN], namehdr[80];
     ESCKEY_S     ekey[8];
     ENVELOPE    *env = NULL;
     HelpType     help;
@@ -7761,6 +7767,40 @@ select_by_text(MAILSTREAM *stream, MSGNO_S *msgmap, long int msgno, SEARCHSET **
 
       case 'b' :
 	sval = "BODYTEXT";
+	break;
+
+      case 'h' :
+	strcpy(tmp, "Name of HEADER to match : ");
+	flags = OE_APPEND_CURRENT;
+	namehdr[0] = '\0';
+	r = 'x';
+	while (r == 'x'){
+	       int done = 0;
+
+	       r = optionally_enter(namehdr, -FOOTER_ROWS(ps_global), 0,
+				 sizeof(namehdr), tmp, ekey, NO_HELP, &flags);
+	       if (r == 1){
+		  cmd_cancelled("Selection by text");
+		  return(1);
+	       }
+	       removing_leading_white_space(namehdr);
+	       while(!done){
+	          while ((namehdr[0] != '\0') && /* remove trailing ":" */
+			(namehdr[strlen(namehdr) - 1] == ':'))
+		     namehdr[strlen(namehdr) - 1] = '\0';
+		  if ((namehdr[0] != '\0') 
+		     && isspace((unsigned char) namehdr[strlen(namehdr) - 1]))
+		       removing_trailing_white_space(namehdr);
+		  else
+		    done++;
+	       }
+	       if (strchr(namehdr,' ') || strchr(namehdr,'\t') ||
+		   strchr(namehdr,':'))
+		  namehdr[0] = '\0';
+	       if (namehdr[0] == '\0')
+	         r = 'x';
+	}
+	sval = namehdr;
 	break;
 
       case 'x':
@@ -7959,7 +7999,7 @@ select_by_text(MAILSTREAM *stream, MSGNO_S *msgmap, long int msgno, SEARCHSET **
     flagsforhist = (not ? 0x1 : 0) + (me ? 0x2 : 0);
     save_hist(history, sstring, flagsforhist, NULL);
 
-    rv = agg_text_select(stream, msgmap, type, not, me, sstring, "utf-8", limitsrch);
+    rv = agg_text_select(stream, msgmap, type, namehdr, not, me, sstring, "utf-8", limitsrch);
     if(we_cancel)
       cancel_busy_cue(0);
 
@@ -8880,6 +8920,90 @@ choose_list_of_charsets(void)
     return(ret);
 }
 
+/* Report quota summary resources in an IMAP server */
+
+void cmd_quota (struct pine *state)
+{
+   QUOTALIST *imapquota;
+   NETMBX mb;
+   STORE_S *store;
+   SCROLL_S  sargs;
+
+   if(!state->mail_stream || !is_imap_stream(state->mail_stream)){
+      q_status_message(SM_ORDER, 1, 5, "Quota only available for IMAP folders");
+      return;
+   }
+
+   if (state->mail_stream
+      && !sp_dead_stream(state->mail_stream)
+      && state->mail_stream->mailbox
+      && *state->mail_stream->mailbox
+      && mail_valid_net_parse(state->mail_stream->mailbox, &mb))
+      imap_getquotaroot(state->mail_stream, mb.mailbox);
+
+   if(!state->quota)  /* failed ? */
+      return;         /* go back... */
+
+   if(!(store = so_get(CharStar, NULL, EDIT_ACCESS))){
+       q_status_message(SM_ORDER | SM_DING, 3, 3, "Error allocating space.");
+       return;
+   }
+
+   so_puts(store, "Quota Report for ");
+   so_puts(store, state->mail_stream->original_mailbox);
+   so_puts(store, "\n\n");
+
+   for (imapquota = state->quota; imapquota; imapquota = imapquota->next){
+
+        so_puts(store, _("Resource : "));
+        so_puts(store, imapquota->name);
+	so_writec('\n', store);
+
+	so_puts(store, _("Usage    : "));
+	so_puts(store, long2string(imapquota->usage));
+	if(!strucmp(imapquota->name,"STORAGE"))
+	  so_puts(store, " KiB ");
+	if(!strucmp(imapquota->name,"MESSAGE")){
+	  so_puts(store, _(" message"));
+	  if(imapquota->usage != 1)
+	    so_puts(store, _("s "));	/* plural */
+	  else
+	    so_puts(store, _(" "));
+	}
+	so_writec('(', store);
+	so_puts(store, long2string(100*imapquota->usage/imapquota->limit));
+	so_puts(store, "%)\n");
+
+	so_puts(store, _("Limit    : "));
+	so_puts(store, long2string(imapquota->limit));
+	if(!strucmp(imapquota->name,"STORAGE"))
+	  so_puts(store, " KiB\n\n");
+	if(!strucmp(imapquota->name,"MESSAGE")){
+	  so_puts(store, _(" message"));
+	  if(imapquota->usage != 1)
+	    so_puts(store, _("s\n\n"));	/* plural */
+	  else
+	    so_puts(store, _("\n\n"));
+	}
+   }
+
+   memset(&sargs, 0, sizeof(SCROLL_S));
+   sargs.text.text   = so_text(store);
+   sargs.text.src    = CharStar;
+   sargs.text.desc   = _("Quota Resources Summary");
+   sargs.bar.title   = _("QUOTA SUMMARY");
+   sargs.proc.tool   = NULL;
+   sargs.help.text   = h_quota_command;
+   sargs.help.title  = NULL;
+   sargs.keys.menu   = &pine_quota_keymenu;
+   setbitmap(sargs.keys.bitmap);
+
+   scrolltool(&sargs);
+   so_give(&store);
+
+   if (state->quota)
+     mail_free_quotalist(&(state->quota));
+}
 
 /*----------------------------------------------------------------------
    Prompt the user for the type of sort he desires

@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: signals.c 769 2007-10-24 00:15:40Z hubert@u.washingt
 /*
  * ========================================================================
  * Copyright 2006-2007 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,10 +103,18 @@ do_hup_signal(int sig)
 RETSIGTYPE
 winch_handler(int sig)
 {
+    int i;
     signal(SIGWINCH, winch_handler);
-    ttresize();
+    if(wheadp != NULL)
+      ttresize();
+    else if (Pmaster){
+      i = Pmaster->arm_winch_cleanup;
+      Pmaster->arm_winch_cleanup = 1;
+    }
     if(Pmaster && Pmaster->winch_cleanup && Pmaster->arm_winch_cleanup)
       (*Pmaster->winch_cleanup)();
+    if(wheadp == NULL && Pmaster != NULL)
+	Pmaster->arm_winch_cleanup = i;
 }
 #endif	/* SIGWINCH and friends */
 

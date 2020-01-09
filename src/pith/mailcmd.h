@@ -3,6 +3,7 @@
  *
  * ========================================================================
  * Copyright 2006-2007 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +54,7 @@ int	   any_messages(MSGNO_S *, char *, char *);
 void	   bogus_utf8_command(char *, char *);
 int	   can_set_flag(struct pine *, char *, int);
 void	   cmd_cancelled(char *);
+void	   cmd_quota(struct pine *);
 int	   cmd_delete(struct pine *, MSGNO_S *, int, char *(*)(struct pine *, MSGNO_S *));
 int	   cmd_undelete(struct pine *, MSGNO_S *, int);
 int	   cmd_expunge_work(MAILSTREAM *, MSGNO_S *);
@@ -65,7 +67,7 @@ char	  *move_read_incoming(MAILSTREAM *, CONTEXT_S *, char *, char **, char *, s
 void	   cross_delete_crossposts(MAILSTREAM *);
 long	   zoom_index(struct pine *, MAILSTREAM *, MSGNO_S *, int);
 int	   unzoom_index(struct pine *, MAILSTREAM *, MSGNO_S *);
-int	   agg_text_select(MAILSTREAM *, MSGNO_S *, char, int, int, char *,
+int	   agg_text_select(MAILSTREAM *, MSGNO_S *, char, char *, int, int, char *,
 			   char *, SEARCHSET **);
 int	   agg_flag_select(MAILSTREAM *, int, int, SEARCHSET **);
 char	  *get_uname(char *, char *, int);

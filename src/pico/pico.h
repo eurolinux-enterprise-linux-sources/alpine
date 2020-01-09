@@ -3,6 +3,7 @@
  *
  * ========================================================================
  * Copyright 2006-2009 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -219,6 +220,7 @@ typedef struct pico_struct {
     int   (*user_says_noflow)();	/* callback to tell us we're not flowing */
     void  (*resize)();			/* callback handling screen resize */
     void  (*winch_cleanup)();		/* callback handling screen resize */
+    void  (*newthread)();		/* callback to create new thread   */
     int    arm_winch_cleanup;		/* do the winch_cleanup if resized */
     HELP_T search_help;
     HELP_T ins_help;

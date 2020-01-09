@@ -128,6 +128,7 @@ void rfc822_parse_msg_full (ENVELOPE **en,BODY **bdy,char *s,unsigned long i,
   ENVELOPE *env = (*en = mail_newenvelope ());
   BODY *body = bdy ? (*bdy = mail_newbody ()) : NIL;
   long MIMEp = -1;		/* flag that MIME semantics are in effect */
+  long PathP = NIL;             /* flag that a Path: was seen */
   parseline_t pl = (parseline_t) mail_parameters (NIL,GET_PARSELINE,NIL);
   if (!host) host = BADHOST;	/* make sure that host is non-null */
   while (i && *s != '\n') {	/* until end of header */
@@ -229,6 +230,9 @@ void rfc822_parse_msg_full (ENVELOPE **en,BODY **bdy,char *s,unsigned long i,
 	  while (c = *d++) if (c != ' ') *t++ = c;
 	  *t++ = '\0';
 	}
+	break;
+      case 'P':                 /* possible Path: */
+	if (!strcmp (tmp+1,"ATH")) env->ngpathexists = T;
 	break;
       case 'R':			/* possible Reply-To: */
 	if (!strcmp (tmp+1,"EPLY-TO"))

@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: send.c 1142 2008-08-13 17:22:21Z hubert@u.washington
 /*
  * ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,6 +99,7 @@ void       reset_body_particulars(BODY_PARTICULARS_S *, BODY *);
 void       free_body_particulars(BODY_PARTICULARS_S *);
 long	   message_format_for_pico(long, int (*)(int));
 int	   send_exit_for_pico(struct headerentry *, void (*)(void), int, char **);
+void	   new_thread_on_blank_subject(void);
 char      *choose_a_priority(char *);
 int        dont_flow_this_time(void);
 int	   mime_type_for_pico(char *);
@@ -1816,6 +1818,8 @@ pine_send(ENVELOPE *outgoing, struct mail_bodystruct **body,
     pbf->mimetype      = mime_type_for_pico;
     pbf->exittest      = send_exit_for_pico;
     pbf->user_says_noflow = dont_flow_this_time;
+    pbf->newthread     = new_thread_on_blank_subject;
+    ps_global->newthread = 0;	/* reset this value */
     if(F_OFF(F_CANCEL_CONFIRM, ps_global))
       pbf->canceltest    = cancel_for_pico;
 
@@ -3066,6 +3070,11 @@ pine_send(ENVELOPE *outgoing, struct mail_bodystruct **body,
 	    outgoing->sender	      = mail_newaddr();
 	    outgoing->sender->mailbox = cpystr(ps_global->VAR_USER_ID);
 	    outgoing->sender->host    = cpystr(ps_global->hostname);
+	}
+
+	if(ps_global->newthread){
+	   if(outgoing->in_reply_to) fs_give((void **)&outgoing->in_reply_to);
+	   if(outgoing->references) fs_give((void **)&outgoing->references);
 	}
 
         /*----- Message is edited, now decide what to do with it ----*/
@@ -4359,6 +4368,16 @@ pine_send_status(int result, char *fcc_name, char *buf, size_t buflen, int *good
 
     return(buf);
 }
+
+/* Callback from Pico to set the conditions for Alpine to start a new thread
+ */
+
+void
+new_thread_on_blank_subject(void)
+{
+  ps_global->newthread = F_ON(F_NEW_THREAD_ON_BLANK_SUBJECT, ps_global);
+}
+
 
 
 /*----------------------------------------------------------------------

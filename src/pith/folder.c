@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: folder.c 1142 2008-08-13 17:22:21Z hubert@u.washingt
 /*
  * ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +17,7 @@ static char rcsid[] = "$Id: folder.c 1142 2008-08-13 17:22:21Z hubert@u.washingt
  */
 
 #include "../pith/headers.h"
+#include "../c-client/utf8aux.h"
 #include "../pith/folder.h"
 #include "../pith/state.h"
 #include "../pith/context.h"
@@ -66,13 +68,17 @@ void        init_incoming_unseen_data(struct pine *, FOLDER_S *f);
 char *
 folder_lister_desc(CONTEXT_S *cntxt, FDIR_S *fdp)
 {
-    char *p;
+    char *p, *q;
+    unsigned char *fname;
 
+    q = ((p = strstr(cntxt->context, "%s")) && !*(p+2)
+	 && !strncmp(fdp->ref, cntxt->context, p - cntxt->context))
+	 ? fdp->ref + (p - cntxt->context) : fdp->ref;
+    fname = folder_name_decoded((unsigned char *) q);
     /* Provide context in new collection header */
-    snprintf(tmp_20k_buf, SIZEOF_20KBUF, "Dir: %s",
-	    ((p = strstr(cntxt->context, "%s")) && !*(p+2)
-	     && !strncmp(fdp->ref, cntxt->context, p - cntxt->context))
-	      ? fdp->ref + (p - cntxt->context) : fdp->ref);
+    snprintf(tmp_20k_buf, SIZEOF_20KBUF, "Dir: %s", fname ? (char *) fname : q);
+    if(fname) fs_give((void **)&fname);
+  
     return(cpystr(tmp_20k_buf));
 }
 
@@ -1182,17 +1188,17 @@ mail_list_filter(MAILSTREAM *stream, char *mailbox, int delim, long int attribs,
 		      this_inbox_is_in_incoming++;
 		}
 	    }
-// UNFIX
-/*	    if(this_inbox_is_in_incoming){
+
+	    if(this_inbox_is_in_incoming){
 		/*
 		 * Don't add a folder for this, only a directory if called for.
 		 * If it isn't a directory, skip it.
 		 */
-/*		if(!(delim && !(attribs & LATT_NOINFERIORS)))
+		if(!(delim && !(attribs & LATT_NOINFERIORS)))
 		  return;
 
 		suppress_folder_add++;
-	    }*/
+	    }
 	}
 	else{
 	    int inbox_is_in_this_collection = 0;
@@ -1211,9 +1217,8 @@ mail_list_filter(MAILSTREAM *stream, char *mailbox, int delim, long int attribs,
 		 * Inbox is already inserted in this collection. Unless
 		 * it is also a directory, we are done.
 		 */
-// UNFIX
-/*		if(!(delim && !(attribs & LATT_NOINFERIORS)))
-		  return;*/
+		if(!(delim && !(attribs & LATT_NOINFERIORS)))
+		  return;
 
 		/*
 		 * Since it is also a directory, what we do depends on
@@ -1268,17 +1273,17 @@ mail_list_filter(MAILSTREAM *stream, char *mailbox, int delim, long int attribs,
 			   && !strcmp(l1,l2)))
 		      this_inbox_is_primary_inbox++;
 		}
-/* UNFIX
+
 		if(this_inbox_is_primary_inbox){
 		    /*
 		     * Don't add a folder for this, only a directory if called for.
 		     * If it isn't a directory, skip it.
 		     */
-/*		    if(!(delim && !(attribs & LATT_NOINFERIORS)))
+		    if(!(delim && !(attribs & LATT_NOINFERIORS)))
 		      return;
 
 		    suppress_folder_add++;
-		}*/
+		}
 	    }
 	}
     }
@@ -1391,6 +1396,16 @@ mail_lsub_filter(MAILSTREAM *stream, char *mailbox, int delim, long int attribs,
     /* We don't support directories in #news */
 }
 
+/* human readable name for a folder. memory freed by caller 
+ * This is a jacket to conversion from modified utf7 to utf8.
+ */
+unsigned char *folder_name_decoded(unsigned char *mailbox)
+{
+  unsigned char *s;
+  s = (unsigned char *) utf8_from_mutf7((unsigned char *) mailbox);
+  if (s == NULL) s = (unsigned char *) cpystr(mailbox);
+  return s;
+}
 
 int
 mail_list_in_collection(char **mailbox, char *ref, char *name, char *tail)

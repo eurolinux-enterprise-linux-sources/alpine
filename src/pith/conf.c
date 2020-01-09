@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: conf.c 1266 2009-07-14 18:39:12Z hubert@u.washington
 /*
  * ========================================================================
  * Copyright 2006-2009 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -3216,6 +3217,8 @@ feature_list(int index)
 	 F_DISABLE_SHARED_NAMESPACES, h_config_disable_shared, PREF_HIDDEN, 0},
 	{"disable-signature-edit-cmd", NULL,
 	 F_DISABLE_SIGEDIT_CMD, h_config_disable_signature_edit, PREF_HIDDEN, 0},
+	{"new-thread-on-blank-subject", "New Thread on Blank Subject",
+	 F_NEW_THREAD_ON_BLANK_SUBJECT, h_config_new_thread_blank_subject, PREF_HIDDEN, 1},
 	{"quell-personal-name-prompt", NULL,
 	 F_QUELL_PERSONAL_NAME_PROMPT, h_config_quell_personal_name_prompt, PREF_HIDDEN, 0},
 	{"quell-user-id-prompt", "Quell User ID Prompt",
@@ -4771,17 +4774,22 @@ NOTE handling of braces in ${name} doesn't check much or do error recovery
    but also after each : in the path.
 	
   ----*/
+#define is_allowed_envchar(C, S) ((S) == 0 ? !isspace((C)) && (C) != '/'\
+		: (((C) >= 'a'  && (C) <= 'z')				\
+		  || ((C) >= 'A'  && (C) <= 'Z')			\
+		  || ((C) >= '0'  && (C) <= '9')))
 
 char *
 expand_variables(char *lineout, size_t lineoutlen, char *linein, int colon_path)
 {
     char *src = linein, *dest = lineout, *p;
     char *limit = lineout + lineoutlen;
-    int   envexpand = 0;
+    int   envexpand = 0, sp;
 
     if(!linein)
       return(NULL);
 
+    sp = strncmp(src,"LIT:pattern=\"/NICK=", strlen("LIT:pattern=\"/NICK=")) == 0;
     while(*src ){			/* something in input string */
         if(*src == '$' && *(src+1) == '$'){
 	    /*
@@ -4862,7 +4870,7 @@ expand_variables(char *lineout, size_t lineoutlen, char *linein, int colon_path)
 		src = rbrace + 1;
 	    }
 	    else{
-		while(*src && !isspace((unsigned char) *src)
+		while(*src && is_allowed_envchar((unsigned char) *src, sp)
 		      && (p-word < sizeof(word)-1))
 		  *p++ = *src++;
 	    }

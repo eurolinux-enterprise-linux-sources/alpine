@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: alpine.c 1266 2009-07-14 18:39:12Z hubert@u.washingt
 /*
  * ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -295,6 +296,7 @@ main(int argc, char **argv)
 	exit(-1);
     }
 
+    mail_parameters(NULL, SET_QUOTA, (void *) pine_parse_quota);
     /* set some default timeouts in case pinerc is remote */
     mail_parameters(NULL, SET_OPENTIMEOUT, (void *)(long)30);
     mail_parameters(NULL, SET_READTIMEOUT, (void *)(long)15);
@@ -2215,13 +2217,6 @@ do_menu(int quick_draw, Pos *cursor_pos, struct key_menu *km)
 
     if(!quick_draw && FOOTER_ROWS(ps)+1 < ps->ttyo->screen_rows){
 	utf8_to_width(buf2, LEGAL_NOTICE, sizeof(buf2),
-		      ps->ttyo->screen_cols-3, NULL);
-	PutLine0(ps->ttyo->screen_rows - (FOOTER_ROWS(ps)+2),
-		 MAX(0, ((ps->ttyo->screen_cols-utf8_width(buf2))/2)),
-		 buf2);
-    }
-    if(!quick_draw && FOOTER_ROWS(ps)+1 < ps->ttyo->screen_rows){
-	utf8_to_width(buf2, LEGAL_NOTICE2, sizeof(buf2),
 		      ps->ttyo->screen_cols-3, NULL);
 	PutLine0(ps->ttyo->screen_rows - (FOOTER_ROWS(ps)+1),
 		 MAX(0, ((ps->ttyo->screen_cols-utf8_width(buf2))/2)),

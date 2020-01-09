@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: adrbkcmd.c 1074 2008-06-04 00:08:43Z hubert@u.washin
 /*
  * ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +58,8 @@ static char rcsid[] = "$Id: adrbkcmd.c 1074 2008-06-04 00:08:43Z hubert@u.washin
 #include "../pith/send.h"
 #include "../pith/list.h"
 #include "../pith/busy.h"
+#include "../pith/icache.h"
+#include "../pith/osdep/color.h"
 
 
 /* internal prototypes */
@@ -1146,6 +1149,8 @@ _("\n to use single quotation marks; for example: George 'Husky' Washington."));
 	  q_status_message1(SM_INFO, 0, 2, _("Address book %s cancelled"), cmd);
     }
     else if(editor_result & COMP_EXIT){
+	if(pico_usingcolor())
+	   clear_index_cache(ps_global->mail_stream, 0);
 	removing_leading_and_trailing_white_space(nick);
 	removing_leading_and_trailing_white_space(full);
 	removing_leading_and_trailing_white_space(fcc);

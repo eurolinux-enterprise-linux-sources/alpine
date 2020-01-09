@@ -75,6 +75,7 @@ smime_get_passphrase(void)
 
     do {
         flags = OE_PASSWD | OE_DISALLOW_HELP;
+	((char *) ps_global->smime->passphrase)[0] = '\0';
         rc =  optionally_enter((char *) ps_global->smime->passphrase,
 			       -FOOTER_ROWS(ps_global), 0,
 			       sizeof(ps_global->smime->passphrase),
@@ -86,7 +87,7 @@ smime_get_passphrase(void)
 	  ps_global->smime->entered_passphrase = 1;
     }
 
-    return rc==0;
+    return rc;	/* better return rc and make the caller check its return value */
 }
 
 

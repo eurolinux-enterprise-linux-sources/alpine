@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: charset.c 1032 2008-04-11 00:30:04Z hubert@u.washing
 /*
  * ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -185,11 +186,10 @@ rfc1522_decode_to_utf8(unsigned char *d, size_t len, char *s)
     *d = '\0';					/* init destination */
 
     while(s && (sw = strstr(s, RFC1522_INIT))){
+	if(!rv)  /* there's something to do, init it */
+	  rv = d;
 	/* validate the rest of the encoded-word */
 	if(rfc1522_valid(sw, &cset, &enc, &txt, &ew)){
-	    if(!rv)
-	      rv = d;				/* remember start of dest */
-
 	    /*
 	     * We may have been putting off copying the first part of the
 	     * source while waiting to see if we have to copy at all.
@@ -286,20 +286,16 @@ rfc1522_decode_to_utf8(unsigned char *d, size_t len, char *s)
 	      lang[-1] = '*';
 	}
 	else{
-
 	    /*
 	     * Found intro, but bogus data followed, treat it as normal text.
 	     */
-
-	    /* if already copying to destn, copy it */
 	    l = (sw - s) + RFC1522_INIT_L;
-	    if(rv){
-		rfc1522_copy_and_transliterate(rv, &d, len, (unsigned char *) s, l, NULL);
-		*d = '\0';
-		s += l;				/* advance s beyond intro */
-	    }
-	    else	/* probably won't have to copy it at all, wait */
-	      s += l;
+	    rfc1522_copy_and_transliterate(rv, &d, len, (unsigned char *) s, l, NULL);
+	    for(; isspace((unsigned char) *(s+l)) && d-rv<len-1;l++)
+		*d++ = *(s+l);  /* copy any trailing space */
+	    rv[len-1] = '\0';
+	    *d = '\0';
+	    s += l;
 	}
     }
 

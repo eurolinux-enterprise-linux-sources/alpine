@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: newmail.c 1266 2009-07-14 18:39:12Z hubert@u.washing
 /*
  * ========================================================================
  * Copyright 2006-2007 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -682,24 +683,29 @@ format_new_mail_msg(char *folder, long int number, ENVELOPE *e,
 	}
 	else {
 	    long fl, tot, newfl;
+	    char *fname = folder ? (char *) folder_name_decoded((unsigned char *) folder) : "";
 
 	    if(number > 1)
 	      snprintf(intro, buflen, _("%ld messages saved to folder \"%.80s\""),
-		      number, folder);
+		      number, fname);
 	    else
-	      snprintf(intro, buflen, _("Mail saved to folder \"%.80s\""), folder);
+	      snprintf(intro, buflen, _("Mail saved to folder \"%.80s\""), fname);
 	    
-	    if((fl=utf8_width(folder)) > 10 &&
+	    if((fl=utf8_width(fname)) > 10 &&
 	       (tot=utf8_width(intro) + utf8_width(from ? from : "") + utf8_width(subj ? subj : "")) >
 					       ps_global->ttyo->screen_cols - 2){
+		char *f = fs_get((strlen(fname) + 1)*sizeof(char));
 		newfl = MAX(10, fl-(tot-(ps_global->ttyo->screen_cols - 2)));
+		utf8_to_width_rhs(f, fname, strlen(fname) + 1, newfl-3);
 		if(number > 1)
-		  snprintf(intro, buflen, _("%ld messages saved to folder \"...%.80s\""),
-			  number, folder+(fl-(newfl-3)));
+		  snprintf(intro, buflen, _("%ld messages saved to folder \"...%.80s\""), number, f);
 		else
-		  snprintf(intro, buflen, _("Mail saved to folder \"...%.80s\""),
-			  folder+(fl-(newfl-3)));
+		  snprintf(intro, buflen, _("Mail saved to folder \"...%.80s\""), f);
+		if(f) fs_give((void **)&f);
 	    }
+
+	    if (fname && *fname)
+		fs_give((void **)&fname);
 	}
     }
 }

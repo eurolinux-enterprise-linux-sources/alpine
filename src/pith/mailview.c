@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: mailview.c 1266 2009-07-14 18:39:12Z hubert@u.washin
 /*
  * ========================================================================
  * Copyright 2006-2009 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2378,8 +2379,21 @@ format_envelope(MAILSTREAM *s, long int n, char *sect, ENVELOPE *e, gf_io_t pc,
       format_addr_string(s, n, sect, "Return-Path: ", e->return_path,
 			 flags, oacs, pc);
 
-    if((which & FE_NEWSGROUPS) && e->newsgroups)
+    if((which & FE_NEWSGROUPS) && e->newsgroups){
+	int bogus = NIL;
       format_newsgroup_string("Newsgroups: ", e->newsgroups, flags, pc);
+      if (!e->ngpathexists && e->message_id &&
+       strncmp (e->message_id,"<alpine.",8) &&
+       strncmp (e->message_id,"<Pine.",6) &&
+       strncmp (e->message_id,"<MS-C.",6) &&
+       strncmp (e->message_id,"<MailManager.",13) &&
+       strncmp (e->message_id,"<EasyMail.",11) &&
+       strncmp (e->message_id,"<ML-",4)) bogus = T;
+
+	if(bogus)
+	  q_status_message(SM_ORDER, 0, 3,
+     "Unverified Newsgroup header -- Message MAY or MAY NOT have been posted");
+    }
 
     if((which & FE_FOLLOWUPTO) && e->followup_to)
       format_newsgroup_string("Followup-To: ", e->followup_to, flags, pc);

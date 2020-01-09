@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: reply.c 1074 2008-06-04 00:08:43Z hubert@u.washingto
 /*
  * ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1164,9 +1165,6 @@ reply_news_test(ENVELOPE *env, ENVELOPE *outgoing)
 	}
 	else if(!outgoing->newsgroups)
 	  outgoing->newsgroups = cpystr(env->newsgroups);
-	if(!IS_NEWS(ps_global->mail_stream))
-	  q_status_message(SM_ORDER, 2, 3,
- _("Replying to message that MAY or MAY NOT have been posted to newsgroup"));
     }
 
     return(ret);

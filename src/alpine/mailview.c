@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: mailview.c 1266 2009-07-14 18:39:12Z hubert@u.washin
 /*
  * ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -735,7 +736,8 @@ scroll_handle_prompt(HANDLE_S *handle, int force)
     if(handle->type == URL){
 	launch_opts[4].ch = 'u';
 
-	if(!(local_h = !struncmp(handle->h.url.path, "x-alpine-", 9))
+	if((!(local_h = !struncmp(handle->h.url.path, "x-alpine-", 9))
+	   || !(local_h = !struncmp(handle->h.url.path, "x-pine-help", 11)))
 	   && (handle->h.url.tool
 	       || ((local_h = url_local_handler(handle->h.url.path) != NULL)
 		   && (handle->h.url.tool = url_external_handler(handle,1)))
@@ -833,7 +835,8 @@ scroll_handle_prompt(HANDLE_S *handle, int force)
 
     if(force
        || (handle->type == URL
-	   && !struncmp(handle->h.url.path, "x-alpine-", 9)))
+	   && !struncmp(handle->h.url.path, "x-alpine-", 9)
+		|| !struncmp(handle->h.url.path, "x-pine-help", 11)))
       return(1);
 
     while(1){
@@ -1697,6 +1700,7 @@ url_local_handler(char *s)
 	{"news:", 5, url_local_news},
 	{"x-alpine-gripe:", 15, gripe_gripe_to},
 	{"x-alpine-help:", 14, url_local_helper},
+	{"x-pine-help:", 12, url_local_helper},
 	{"x-alpine-phone-home:", 20, url_local_phone_home},
 	{"x-alpine-config:", 16, url_local_config},
 	{"x-alpine-cert:", 14, url_local_certdetails},
@@ -2603,6 +2607,7 @@ scrolltool(SCROLL_S *sparms)
 	}
 
 	if(ps_global->noticed_change_in_unseen){
+	    ps_global->noticed_change_in_unseen = 0;  /* redraw only once */
 	    cmd = MC_RESIZE;	/* causes cursor to be saved in folder_lister */
 	    done = 1;
 	    continue;

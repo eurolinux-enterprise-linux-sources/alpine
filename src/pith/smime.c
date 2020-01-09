@@ -1307,6 +1307,66 @@ bio_from_store(STORE_S *store)
     return(ret);
 }
 
+/* 
+ * Encrypt file; given a path (char *) fp, replace the file
+ * by an encrypted version of it. If (char *) text is not null, then
+ * replace the text of (char *) fp by the encrypted version of (char *) text.
+ */
+int
+encrypt_file(char *fp, char *text)
+{
+  const EVP_CIPHER *cipher = NULL;
+  STACK_OF(X509) *encerts = NULL;
+  X509 *cert;
+  PERSONAL_CERT  *pcert;
+  BIO *in;
+  PKCS7 *p7 = NULL;
+  FILE *fpp;
+  int rv = 0;
+
+  smime_init();
+  if((pcert = ps_global->smime->personal_certs) == NULL)
+    return 0;
+
+  cipher = EVP_aes_256_cbc();
+  encerts = sk_X509_new_null();
+  
+  if((cert = get_cert_for(pcert->name)) != NULL)
+     sk_X509_push(encerts, cert);
+  else
+     goto end;
+
+  if(text){
+    in = BIO_new(BIO_s_mem());
+    if(in == NULL)
+      goto end;
+    (void) BIO_reset(in);
+    BIO_puts(in, text);
+  }
+  else{
+    if(!(in = BIO_new_file(fp, "rb")))
+      goto end;
+
+    BIO_read_filename(in, fp);
+  }
+
+  if((p7 = PKCS7_encrypt(encerts, in, cipher, 0)) == NULL)
+     goto end;
+  BIO_set_close(in, BIO_CLOSE);
+  BIO_free(in);
+  if(!(in = BIO_new_file(fp, "w")))
+    goto end;
+  BIO_reset(in);
+  rv = PEM_write_bio_PKCS7(in, p7);
+  BIO_flush(in);
+
+end:
+  BIO_free(in);
+  PKCS7_free(p7);
+  sk_X509_pop_free(encerts, X509_free);
+
+  return rv;
+}
 
 /*
  * Encrypt a message on the way out. Called from call_mailer in send.c
@@ -1720,6 +1780,102 @@ find_certificate_matching_pkcs7(PKCS7 *p7)
     return x;
 }
 
+/* decrypt an encrypted file.
+   Args: fp - the path to the encrypted file.
+	 rv - a code that thells the caller what happened inside the function 
+   Returns the decoded text allocated in a char *, whose memory must be
+   freed by caller 
+ */
+
+char *
+decrypt_file(char *fp, int *rv)
+{
+  PKCS7 *p7 = NULL;
+  char *text, *tmp;
+  BIO *in = NULL, *out = NULL;
+  EVP_PKEY *pkey = NULL, *key = NULL;
+  PERSONAL_CERT *pcert = NULL;
+  X509 *recip, *cert;
+  STORE_S *outs = NULL, *store, *ins;
+  int i, j;
+  long unsigned int len;
+  void *ret;
+
+  smime_init();
+
+  if((text = read_file(fp, 0)) == NULL)
+    return NULL;
+
+  tmp = fs_get(strlen(text) + (strlen(text) << 6) + 1);
+  for(j = 0, i = strlen("-----BEGIN PKCS7-----") + 1; text[i] != '\0' 
+		&& text[i] != '-'; j++, i++)
+     tmp[j] = text[i];
+  tmp[j] = '\0';
+
+  ret = rfc822_base64(tmp, strlen(tmp), &len);
+
+  if((in = BIO_new_mem_buf((char *)ret, len)) != NULL){
+     p7 = d2i_PKCS7_bio(in, NULL);
+     BIO_free(in);
+  }
+
+  if(text) fs_give((void **)&text);
+  if(ret) fs_give((void **)&ret);
+
+  if((pcert = ps_global->smime->personal_certs) == NULL)
+   goto end;
+
+  if((i = load_private_key(pcert)) == 0
+     && ps_global->smime
+     && ps_global->smime->need_passphrase
+     && !ps_global->smime->already_auto_asked)
+	for(; i == 0;){
+	   ps_global->smime->already_auto_asked = 1;
+	   if(pith_opt_smime_get_passphrase){
+	     switch((*pith_opt_smime_get_passphrase)()){
+		case 0 : i = load_private_key(pcert);
+			 break;
+
+		case 1 : i = -1;
+			 break;
+
+		default: break; /* repeat until we cancel */
+	     }
+	   }
+	   else
+	      i = -2;
+	}
+
+  if(rv) *rv = i;
+
+  if((key = pcert->key) == NULL)
+    goto end;
+
+  recip = get_cert_for(pcert->name);
+  out = BIO_new(BIO_s_mem());
+  (void) BIO_reset(out);
+
+  i = PKCS7_decrypt(p7, key, recip, out, 0);
+
+  if(F_OFF(F_REMEMBER_SMIME_PASSPHRASE,ps_global))
+     forget_private_keys();
+
+  if(i == 0){
+    q_status_message1(SM_ORDER, 1, 1, _("Error decrypting: %s"),
+			      (char*) openssl_error_string());
+    goto end;
+  }
+
+  BIO_get_mem_data(out, &tmp);
+
+  text = cpystr(tmp);
+  BIO_free(out);
+
+end:
+  PKCS7_free(p7);
+
+  return text;
+}
 
 /*
  * Try to decode (decrypt or verify a signature) a PKCS7 body
@@ -1736,7 +1892,6 @@ do_decoding(BODY *b, long msgno, const char *section)
     PERSONAL_CERT 	*pcert = NULL;
     char    *what_we_did = "";
     char     null[1];
-    char     newSec[100];
 
     dprint((9, "do_decoding(msgno=%ld type=%d subtype=%s section=%s)", msgno, b->type, b->subtype ? b->subtype : "NULL", (section && *section) ? section : (section != NULL) ? "Top" : "NULL"));
     null[0] = '\0';
@@ -1751,8 +1906,7 @@ do_decoding(BODY *b, long msgno, const char *section)
     }
     else{
 
-	snprintf(newSec, sizeof(newSec), "%s%s1", section ? section : "", (section && *section) ? "." : "");
-	p7 = get_pkcs7_from_part(msgno, newSec);
+	p7 = get_pkcs7_from_part(msgno, section && *section ? section : "1");
 	if(!p7){
             q_status_message1(SM_ORDER, 2, 2, "Couldn't load PKCS7 object: %s",
 			     (char*) openssl_error_string());

@@ -430,7 +430,9 @@ long tcp_getbuffer (TCPSTREAM *stream,unsigned long size,char *s)
 			   SOCKET_ERROR) &&
 			  ((errno = WSAGetLastError ()) == WSAEINTR));
 	else if (!i) {		/* timeout, ignore if told to resume */
-	  if (tmoh && (*tmoh) ((long) (now - t),(long) (now - tl))) continue;
+	  if (tmoh && (*tmoh) ((long) (now - t),(long) (now - tl), 
+								stream->host))
+		continue;
 				/* otherwise punt */
 	  if (tcpdebug) mm_log ("TCP buffer read timeout",TCPDEBUG);
 	  return tcp_abort (stream);
@@ -498,7 +500,8 @@ long tcp_getdata (TCPSTREAM *stream)
 			 SOCKET_ERROR) &&
 			((errno = WSAGetLastError ()) == WSAEINTR));
       else if (!i) {		/* timeout, ignore if told to resume */
-	if (tmoh && (*tmoh) ((long) (now - t),(long) (now - tl))) continue;
+	if (tmoh && (*tmoh) ((long) (now - t),(long) (now - tl), stream->host))
+		continue;
 				/* otherwise punt */
 	if (tcpdebug) mm_log ("TCP data read timeout",TCPDEBUG);
 	return tcp_abort (stream);
@@ -582,7 +585,8 @@ long tcp_sout (TCPSTREAM *stream,char *string,unsigned long size)
 			 SOCKET_ERROR) &&
 			((errno = WSAGetLastError ()) == WSAEINTR));
       else if (!i) {		/* timeout, ignore if told to resume */
-	if (tmoh && (*tmoh) ((long) (now - t),(long) (now - tl))) continue;
+	if (tmoh && (*tmoh) ((long) (now - t),(long) (now - tl), stream->host))
+		continue;
 				/* otherwise punt */
 	if (tcpdebug) mm_log ("TCP write timeout",TCPDEBUG);
 	return tcp_abort (stream);

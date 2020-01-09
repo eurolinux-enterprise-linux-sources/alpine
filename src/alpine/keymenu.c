@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: keymenu.c 1074 2008-06-04 00:08:43Z hubert@u.washing
 /*
  * ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -314,6 +315,20 @@ struct key context_fcc_keys[] =
 	WHEREIS_MENU};
 INST_KEY_MENU(c_fcc_km, context_fcc_keys);
 
+static struct key quota_keys[] =
+	{HELP_MENU,
+	NULL_MENU,
+	{"E","Exit",{MC_EXIT,3,{'e','i',ctrl('C')}},KS_EXITMODE},
+	NULL_MENU,
+	NULL_MENU,
+	NULL_MENU,
+	NULL_MENU,
+	NULL_MENU,
+	NULL_MENU,
+	NULL_MENU,
+	NULL_MENU,
+	NULL_MENU};
+INST_KEY_MENU(pine_quota_keymenu, quota_keys);
 
 struct key folder_keys[] =
        {HELP_MENU,
@@ -482,7 +497,7 @@ struct key help_keys[] =
 	NEXTPAGE_MENU,
 	PRYNTMSG_MENU,
 	{"Z",N_("Print All"),{MC_PRINTALL,1,{'z'}},KS_NONE},
-	NULL_MENU,
+	{"N",N_("Name"),{MC_EXPORT,1,{'n'}},KS_NONE},
 	WHEREIS_MENU,
 
 	HELP_MENU,
@@ -654,7 +669,7 @@ struct key index_keys[] =
 	/* TRANSLATORS: toggles a collapsed view or an expanded view
 	   of a message thread on and off */
 	{"/",N_("Collapse/Expand"),{MC_COLLAPSE,1,{'/'}},KS_NONE},
-	NULL_MENU,
+	{"@", N_("Quota"), {MC_QUOTA,1,{'@'}}, KS_NONE},
 	NULL_MENU};
 INST_KEY_MENU(index_keymenu, index_keys);
 
@@ -730,7 +745,7 @@ struct key thread_keys[] =
 	ENDKEY_MENU,
 	NULL_MENU,
 	{"/",N_("Collapse/Expand"),{MC_COLLAPSE,1,{'/'}},KS_NONE},
-	NULL_MENU,
+	{"@", N_("Quota"), {MC_QUOTA,1,{'@'}}, KS_NONE},
 	NULL_MENU};
 INST_KEY_MENU(thread_keymenu, thread_keys);
 
@@ -2681,6 +2696,9 @@ mark_keymenu_dirty(void)
 void
 output_keymenu(struct key_menu *km, unsigned char *bm, int row, int column)
 {
+#ifdef __CYGWIN__
+    extern char term_name[];
+#endif
     register struct key *k;
     struct key          *last_time;
     int                  i, j,
@@ -2770,7 +2788,11 @@ output_keymenu(struct key_menu *km, unsigned char *bm, int row, int column)
 	char  this_label[6*MAX_LABEL+1];
 
 	j = 6*i - 1;
+#ifndef __CYGWIN__
 	if(i == 1 && !label_color)
+#else
+	if(i == 1 && (!label_color || !struncmp(term_name,"cygwin", 6)))
+#endif
 	  max_column--;  /* Some terminals scroll if you write in the
 			    lower right hand corner. If user has a
 			    label_color set we'll take our chances.

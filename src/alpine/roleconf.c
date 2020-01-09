@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: roleconf.c 1266 2009-07-14 18:39:12Z hubert@u.washin
 /*
  * ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -433,9 +434,8 @@ uh_oh:
 	  /*
 	   * ROLE_DO_OTHER is made up of a bunch of different variables
 	   * that may have changed. Assume they all changed and fix them.
-	   * Similarly for ROLE_DO_INCOLS.
 	   */
-	  if(rflags & (ROLE_DO_OTHER|ROLE_DO_INCOLS)){
+	  if(rflags & ROLE_DO_OTHER){
 	      reset_index_format();
 	      clear_index_cache(ps_global->mail_stream, 0);
 	      if(!mn_get_mansort(ps_global->msgmap))

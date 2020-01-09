@@ -4,7 +4,7 @@
 #
 #/* ========================================================================
 # * Copyright 2006-2008 University of Washington
-# * Copyright 2009-2010 Re-Alpine Project
+# * Copyright 2013 Eduardo Chappa
 # *
 # * Licensed under the Apache License, Version 2.0 (the "License");
 # * you may not use this file except in compliance with the License.
@@ -145,22 +145,23 @@ $Id: pine.hlp 1266 2009-07-14 18:39:12Z hubert@u.washington.edu $
 ============= h_news =================
 <HTML>
 <HEAD>
-<TITLE>RELEASE NOTES for Re-Alpine</TITLE>
+<TITLE>RELEASE NOTES for Alpine</TITLE>
 </HEAD>
 <BODY>                 
-<H1>Re-Alpine Release Notes</H1>
+<H1>Alpine Release Notes</H1>
 <DIV ALIGN=CENTER>
 Version <!--#echo var="ALPINE_VERSION"-->(<!--#echo var="ALPINE_REVISION"-->)
 <BR>
 <!--chtml if pinemode="running"-->
 (built <!--#echo var=ALPINE_COMPILE_DATE-->)
 <!--chtml endif-->
-<BR>University of Washington
+<BR>Copyright 2006-2008 University of Washington
+<BR>Copyright 2013 Eduardo Chappa
 </DIV>
 
 <P>
 Alpine is an &quot;Alternatively Licensed Program for Internet
-News and Email&quot; produced by the University of Washington.
+News and Email&quot; produced until 2008 by the University of Washington.
 It is intended to be an easy-to-use program for
 sending, receiving, and filing Internet electronic mail messages and
 bulletin board (Netnews) messages.  Alpine is designed to run on a wide
@@ -168,23 +169,58 @@ variety of Unix&reg; operating systems.  A version for Microsoft Windows&reg;
 is available as is a world wide web based version designed to run under the
 Apache web server.
 
-<H2>New in Re-Alpine <!--#echo var="ALPINE_VERSION"-->(<!--#echo var="ALPINE_REVISION"-->)</H2>
+
+<H2>New in Alpine <!--#echo var="ALPINE_VERSION"-->(<!--#echo var="ALPINE_REVISION"-->)</H2>
+
+Version <!--#echo var="ALPINE_VERSION"-->(<!--#echo var="ALPINE_REVISION"-->)
+addresses bugs found in previous releases and has a few additions as well.
+
 <P>
-Fixes
+Additions include:
+<P>
+
 <UL>
-   <LI> Removed RFCs from the sources and replaced with a link to them
-   <LI> Fixes building on more recent MacOS systems - untested
-   <LI> Fixes folder collection behavior with dual-use mailboxes
-   <LI> Fixes for OpenSSL 1.0+
-   <LI> Fixes for OpenSSL
-   <LI> Fixes for BSD systems
+   <LI> Quota report for IMAP folders that support it (press the &quot;@&quot; command in the index screen of such folder).
+   <LI> Search a folder for the content of any header with the &quot;;&quot; command. 
+   <LI> Foreign characters are decoded correctly in IMAP folders.
+   <LI> Question about breaking connection to slow servers includes their name.
+   <LI> Internal x-alpine-help: resource locator for sending links to internal help.
+   <LI> OpenSuse: Alpine find location of OpenSSL certificates.
+   <LI> Cygwin: Alpine builds without need of patch.
+   <LI> Recognition of proper mime type for docx, xlsx, and pptx files.
+   <LI> When composing a message, Alpine will create a new thread when the subject is erased.
+   <LI> Add support for strong encryption of password file when S/MIME is built in.
 </UL>
 
+<P>
+Bugs that have been addressed include:
+<P>
+
+<UL>
+   <LI> Alpine will close a folder after confirming with user their intention and not reopen it.
+   <LI> Double allocation of memory in Pico.
+   <LI> Alpine does not give warning of message sent and posted upon receipt by email of message posted in newsgroup.
+   <LI> Handling of STYLE html parameter may make Alpine not display the content of a message.
+   <LI> Not recognition of environment variables in some options.
+   <LI> Not display of login prompt during initial keystrokes.
+   <LI> justification of long urls breaks them.
+   <LI> Incorrect New Mail message when envelope is not available.
+   <LI> Inorrect display of PREFDATE, PREFDATETIME and PREFTIME tokens.
+   <LI> Crash when resizing the screen after display of LDAP search.
+   <LI> Crash when redrawing screen while opening a remote folder collection.
+   <LI> Infinite loop in scrolltool function during notification of new mail.
+   <LI> No repaint of the screen was done when the SMARTDATE token is used in the index screen after midnight.
+   <LI> No display of signed and encrypted S/MIME messages.
+   <LI> Alpine will not build with OpenSSL.
+   <LI> Crash for double locking in calls to c-client.
+   <LI> Bad recognition of mime-encoded text may make Alpine not print the subject of a message.
+   <LI> Ignore the references header when threading messages
+   <LI> No update of colors in index screen after update to addressbook.
+</UL>
 
 <P>
-Version 2.01
-addresses bugs found in previous releases and has a few additions as well.
-<P>
+Version 2.01 addresses bugs found in previous releases and has a few 
+additions as well.
 
 <P>
 Additions include:
@@ -508,8 +544,8 @@ page at
 <CENTER><A HREF="http://www.washington.edu/alpine/credits.html">http://www.washington.edu/alpine/credits</A></CENTER>
 
 <P>
-Alpine Copyright 2006-2008 University of Washington
-Re-Alpine Copyright 2009 Re-Alpine Project
+Alpine Copyright 2006-2008 University of Washington,
+Copyright 2013 Eduardo Chappa.
 
 <P>
 Additional legal notices can be found <A HREF="h_news_legal">here</A>
@@ -1379,7 +1415,9 @@ Version <!--#echo var="ALPINE_VERSION"-->
 <BR>(built <!--#echo var=ALPINE_COMPILE_DATE-->)
 <!--chtml endif-->
 </DIV>
-<BR>University of Washington</CENTER>
+<CENTER>Copyright 2006-2008 University of Washington
+<BR> Copyright 2013 Eduardo Chappa
+</CENTER>
 
 <P>
 When you are viewing a help screen, there may be links to
@@ -1453,7 +1491,7 @@ The &quot;NextLink&quot; and &quot;PrevLink&quot; commands
 <H1>Introduction</H1>
 
 Alpine is an &quot;Alternatively Licensed Program for Internet
-News and Email&quot; produced by the University of Washington.
+News and Email&quot; produced until 2008 by the University of Washington.
 It is intended to be an easy-to-use program for
 sending, receiving, and filing Internet electronic mail messages and
 bulletin board (Netnews/Usenet) messages. Alpine supports the following
@@ -2439,11 +2477,7 @@ if the connection is encrypted.
 <BODY>
 <H1>Reporting Problems</H1>
 
-There are now literally millions of Alpine users in over 50 countries.
-The Alpine development team has no funding to provide support to anyone
-outside of the University of Washington.  However, we certainly want Alpine
-to be the best tool it can be, so we do want to know about problems. We
-ask that you first read the relevant help screens and then seek
+We ask that you first read the relevant help screens and then seek
 assistance from your own local support staff.  Once you are sure that your
 difficulty is not a local configuration problem, you might look at the
 help section explaining where to look for
@@ -3200,6 +3234,7 @@ There are also additional details on
 <li><a href="h_config_prefix_editing">FEATURE: <!--#echo var="FEAT_enable-reply-indent-string-editing"--></a>
 <li><a href="h_config_enable_search_and_repl">FEATURE: <!--#echo var="FEAT_enable-search-and-replace"--></a>
 <li><a href="h_config_sigdashes">FEATURE: <!--#echo var="FEAT_enable-sigdashes"--></a>
+<li><a href="h_config_new_thread_blank_subject">FEATURE: <!--#echo var="FEAT_new-thread-on-blank-subject"--></a>
 <li><a href="h_config_can_suspend">FEATURE: <!--#echo var="FEAT_enable-suspend"--></a>
 <li><a href="h_config_enable_tab_complete">FEATURE: <!--#echo var="FEAT_enable-tab-completion"--></a>
 <li><a href="h_config_enable_take_export">FEATURE: <!--#echo var="FEAT_enable-take-export"--></a>
@@ -4139,6 +4174,15 @@ F2 function
 key will Exit the Help system altogether.
 
 <P>
+The "N" command will tell you the internal name of the help text you are 
+reading each time, so that you can send this name in the text of a message 
+and create a direct link to that internal help using the x-pine-help URL 
+scheme. For example, the direct link to this item is 
+x-pine-help:h_special_help_nav. If you add this text to a message, then
+a person using Pine to read such message would have a direct link to this
+help text.
+
+<P>
 When you are finished reading this help text, you can press the
 <!--chtml if pinemode="function_key"-->
 F3 function
@@ -4229,6 +4273,45 @@ This may be in the form of a mail folder on a remote computer, an
 IMAP mailbox or even a Web site.
 </DD>
 </DL>
+
+<P>
+&lt;End of help on this topic&gt;
+</BODY>
+</HTML>
+============= h_quota_command =============
+<HTML>
+<HEAD>
+<TITLE>Quota Screen Explained</TITLE>
+</HEAD>
+<BODY>
+<H1>Quota Screen Explained</H1>
+
+<P> This screen summarizes the quota report for this mailbox in the
+IMAP server. For each resource that you have a quota, this reports summarizes
+its use and limit.
+
+<P> Your IMAP server administrator may have set a quota based either on 
+the total size of your mailbox (STORAGE), or the number of messages in 
+your mailbox (MESSAGES), or some other criteria. This will be reported
+to you indicating the type of quota, its total use and its limit.
+
+<P> The report for STORAGE is reported in kibibytes (KiB). One kibibyte is 
+1024 bytes. Each of the characters that you see in this help text is one 
+byte, and this help text is about 1 kibibyte in size. Small messages sent 
+by Alpine are normally less than 4 kibibytes in size (which includes 
+headers and text). Other email programs may send messages with bigger 
+sizes when they send messages, since they send plain text and an 
+alternative part in HTML.
+
+<P> A convenient way to save space for the STORAGE type of quota is by 
+deleting attachments. This is done on each individual message by pressing 
+the &quot;V&quot; command while reading the message text, then moving the cursor 
+to the position of the attachment that is to be deleted, then pressing
+&quot;D&quot; to delete such attachment, going back to reading the 
+message with the &quot;&lt;&quot; command and pressing &quot;S&quot; to 
+save the message in the same folder you are reading from. The saved 
+message will not have the attachment that was marked deleted. Now you
+can delete and expunge the message with the unwanted attachment.
 
 <P>
 &lt;End of help on this topic&gt;
@@ -27576,6 +27659,36 @@ this feature.
 <P>
 See also &quot;<a href="h_config_strip_sigdashes"><!--#echo var="FEAT_strip-from-sigdashes-on-reply"--></a>&quot;
 for a related feature.
+
+<P>
+<UL>   
+<LI><A HREF="h_finding_help">Finding more information and requesting help</A>
+</UL><P>
+&lt;End of help on this topic&gt;
+</BODY>
+</HTML>
+====== h_config_new_thread_blank_subject =====
+<HTML>
+<HEAD>
+<TITLE>FEATURE: <!--#echo var="FEAT_new-thread-on-blank-subject"--></TITLE>
+</HEAD>
+<BODY>
+<H1>FEATURE: <!--#echo var="FEAT_new-thread-on-blank-subject"--></H1>
+
+When this feature is enabled (the default) Alpine will create a new thread
+every time that the subject line becomes empty at any time during composition.
+
+<P>
+This behavior is particularly useful in case you are replying to a message.
+Replying to a message causes the message to be in the same thread than the
+original message that is being replied to. However, many authors want to create
+a new message (in a different thread) while replying to a message, and they do
+this by changing the full subject, by first deleting the original subject and
+typing the new subject of the current message.
+
+<P>
+Enabling this feature causes that any time that the subject is deleted, the 
+message being composed will be considered the first message of a new thread.
 
 <P>
 <UL>   

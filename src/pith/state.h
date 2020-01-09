@@ -3,6 +3,7 @@
  *
  * ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,6 +108,7 @@ struct pine {
     unsigned     read_predicted:1;
 
     char         cur_folder[MAXPATH+1];
+    QUOTALIST	*quota;
     char         last_unambig_folder[MAXPATH+1];
     char         last_save_folder[MAXPATH+1];
     CONTEXT_S   *last_save_context;
@@ -168,6 +170,7 @@ struct pine {
     unsigned	 intr_pending:1;	/* received SIGINT and haven't acted */
     unsigned	 expunge_in_progress:1;	/* don't want to re-enter c-client   */
     unsigned	 never_allow_changing_from:1;	/* not even for roles */
+    unsigned	 newthread:1;		/* start a new thread on composing */
 
     unsigned	 readonly_pinerc:1;
     unsigned	 view_all_except:1;

@@ -31,6 +31,8 @@
 
 
 /* exported protoypes */
+int	       encrypt_file(char *fp, char *text);
+char 	      *decrypt_file(char *fp, int *rv);
 int            is_pkcs7_body(BODY *b);
 int            fiddle_smime_message(BODY *b, long msgno);
 int            encrypt_outgoing_message(METAENV *header, BODY **bodyP);

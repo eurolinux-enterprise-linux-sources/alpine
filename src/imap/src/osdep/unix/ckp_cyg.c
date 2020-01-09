@@ -33,6 +33,7 @@
  */
 
 #undef ERROR
+#define NOCRYPT
 #include <windows.h>
 #include <sys/cygwin.h>
 

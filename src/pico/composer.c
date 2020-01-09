@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: composer.c 1266 2009-07-14 18:39:12Z hubert@u.washin
 /*
  * ========================================================================
  * Copyright 2006-2009 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,6 +94,11 @@ struct headerentry *headents;
  */
 struct on_display ods;				/* global on_display struct */
 
+/* a pointer to the subject line. This is so that we do not have to compute
+ * the header line in every call. It saves a few CPU cycles
+ */
+
+struct hdr_line *subject_line = NULL;
 
 /*
  * useful macros
@@ -495,6 +501,11 @@ HeaderEditor(int f, int n)
     mswin_setscrollrange (0, 0);
 #endif /* _WINDOWS */
 
+    if(Pmaster)
+      for (subject_line = NULL, i=0; headents[i].name; i++)
+	if(strcmp(headents[i].name, "Subject") == 0)
+	  subject_line = headents[i].hd_text;
+
     /* 
      * Decide where to begin editing.  if f == TRUE begin editing
      * at the bottom.  this case results from the cursor backing
@@ -794,9 +805,9 @@ HeaderEditor(int f, int n)
 		    len += lmp->fname ? strlen(lmp->fname) : 0;
 
 		    if(len+3 > sizeof(buf)){
-			bfp = malloc(len+3);
 			space = len+3;
-			if((bfp=malloc(len+3)) == NULL){
+			bfp = malloc(space*sizeof(char));
+			if(bfp == NULL){
 			    emlwrite("\007Can't malloc space for filename",
 				     NULL);
 			    continue;
@@ -1279,9 +1290,9 @@ nomore_to_complete:
 			len += strlen(lmp->size);
 
 			if(len+3 > sizeof(buf)){
-			    bfp = malloc(len+3);
 			    space = len+3;
-			    if((bfp=malloc(len+3)) == NULL){
+			    bfp = malloc(space*sizeof(char));
+			    if(bfp == NULL){
 				emlwrite("\007Can't malloc space for filename",
 					 NULL);
 				continue;
@@ -1907,6 +1918,11 @@ LineEdit(int allowedit, UCS *lastch)
     }
 
     while(1){					/* edit the line... */
+
+	if(Pmaster && subject_line != NULL 
+		&& ods.cur_l == subject_line 
+		&& ods.cur_l->text[0] == 0)
+	  (*Pmaster->newthread)();
 
 	if(skipmove)
 	  skipmove = 0;

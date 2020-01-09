@@ -585,7 +585,7 @@ long tcp_getbuffer (TCPSTREAM *stream,unsigned long size,char *s)
 	if (tcpdebug) mm_log ("Successfully read TCP buffer",TCPDEBUG);
       }
 				/* timeout, punt unless told not to */
-      else if (!tmoh || !(*tmoh) (now - t,now - tl)) {
+      else if (!tmoh || !(*tmoh) (now - t,now - tl, stream->host)) {
 	if (tcpdebug) mm_log ("TCP buffer read timeout",TCPDEBUG);
 	return tcp_abort (stream);
       }
@@ -645,7 +645,7 @@ long tcp_getdata (TCPSTREAM *stream)
       if (tcpdebug) mm_log ("Successfully read TCP data",TCPDEBUG);
     }
 				/* timeout, punt unless told not to */
-    else if (!tmoh || !(*tmoh) (now - t,now - tl)) {
+    else if (!tmoh || !(*tmoh) (now - t,now - tl, stream->host)) {
       if (tcpdebug) mm_log ("TCP data read timeout",TCPDEBUG);
       return tcp_abort (stream);/* error or timeout no-continue */
     }
@@ -716,7 +716,7 @@ long tcp_sout (TCPSTREAM *stream,char *string,unsigned long size)
       if (tcpdebug) mm_log ("successfully wrote to TCP",TCPDEBUG);
     }
 				/* timeout, punt unless told not to */
-    else if (!tmoh || !(*tmoh) (now - t,now - tl)) {
+    else if (!tmoh || !(*tmoh) (now - t,now - tl, stream->host)) {
       if (tcpdebug) mm_log ("TCP write timeout",TCPDEBUG);
       return tcp_abort (stream);
     }

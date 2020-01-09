@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: folder.c 1144 2008-08-14 16:53:34Z hubert@u.washingt
 /*
  * ========================================================================
  * Copyright 2006-2008 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1722,6 +1723,7 @@ folder_list_text(struct pine *ps, FPROC_S *fp, gf_io_t pc, HANDLE_S **handlesp, 
 		slot_width = 1;
 		for(fcount = i = 0; i < ftotal; i++){
 		    FOLDER_S *f = folder_entry(i, FOLDERS(c_list));
+		    unsigned char *fname;
 
 		    ps->user_says_cancel = 0;
 
@@ -1730,7 +1732,13 @@ folder_list_text(struct pine *ps, FPROC_S *fp, gf_io_t pc, HANDLE_S **handlesp, 
 
 		    fcount++;
 
-		    width = utf8_width(FLDR_NAME(f));
+		    fname = folder_name_decoded((unsigned char *)FLDR_NAME(f));
+
+		    width = utf8_width(fname ? (char *)fname : FLDR_NAME(f));
+
+		    if(fname)
+		       fs_give((void **)&fname);
+
 		    if(f->isdir)
 		      width += (f->isfolder) ? 3 : 1;
 
@@ -1998,6 +2006,7 @@ folder_list_write_middle(FOLDER_S *fp, CONTEXT_S *ctxt, gf_io_t pc, HANDLE_S *h2
 {
     int rv = -1;
     char buf[256];
+    unsigned char *fname;
 
     if(h2){
 	snprintf(buf, sizeof(buf), "%d", h2->key);
@@ -2007,7 +2016,9 @@ folder_list_write_middle(FOLDER_S *fp, CONTEXT_S *ctxt, gf_io_t pc, HANDLE_S *h2
     if(!fp)
       return(rv);
 
-    if(gf_puts(FLDR_NAME(fp), pc)
+    fname = folder_name_decoded((unsigned char *)FLDR_NAME(fp));
+
+    if(gf_puts(fname ? (char *)fname : FLDR_NAME(fp), pc)
        && (h2 ? ((*pc)(TAG_EMBED) && (*pc)(TAG_BOLDOFF)		/* tie off handle 1 */
 		&& (*pc)(TAG_EMBED) && (*pc)(TAG_INVOFF)) : 1)
        && (h2 ? ((*pc)(TAG_EMBED) && (*pc)(TAG_HANDLE)		/* start handle 2 */
@@ -2015,10 +2026,13 @@ folder_list_write_middle(FOLDER_S *fp, CONTEXT_S *ctxt, gf_io_t pc, HANDLE_S *h2
        && ((fp->isdir && fp->isfolder) ? (*pc)('[') : 1)
        && ((fp->isdir) ? (*pc)(ctxt->dir->delim) : 1)
        && ((fp->isdir && fp->isfolder) ? (*pc)(']') : 1)){
-	rv = utf8_width(FLDR_NAME(fp));
+	rv = utf8_width(fname ? (char *)fname : FLDR_NAME(fp));
 	if(fp->isdir)
 	  rv += (fp->isfolder) ? 3 : 1;
     }
+
+    if(fname)
+	fs_give((void **)&fname);
 	
     return(rv);
 }
@@ -5583,11 +5597,13 @@ delete_folder(CONTEXT_S *context, int index, char *next_folder, size_t len, MAIL
 	}
     }
     else{
-	snprintf(ques_buf, sizeof(ques_buf), "DELETE \"%s\"%s", folder, 
+	unsigned char *fname = folder_name_decoded((unsigned char *)folder);
+	snprintf(ques_buf, sizeof(ques_buf), "DELETE \"%s\"%s", fname ? (char *) fname : folder, 
 		close_opened ? " (the currently open folder)" :
 	  (fp->isdir && !(fp->isdual || fp->isfolder
 			  || (folder_index(folder, context, FI_FOLDER) >= 0)))
 			      ? " (a directory)" : "");
+	if(fname) fs_give((void **)&fname);
 	ques_buf[sizeof(ques_buf)-1] = '\0';
 
 	if((ret = want_to(ques_buf, 'n', 'x', NO_HELP, WT_NORM)) != 'y'){

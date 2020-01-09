@@ -5,6 +5,7 @@ static char rcsid[] = "$Id: url.c 769 2007-10-24 00:15:40Z hubert@u.washington.e
 /*
  * ========================================================================
  * Copyright 2006-2007 University of Washington
+ * Copyright 2013 Eduardo Chappa
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,7 +114,13 @@ rfc1738_scan(char *line, int *len)
 			    && !struncmp(start + 1, "elnet", 5))))
 		|| (n == 8
 		    && (*start == 'P' || *start == 'p')
-		    && !struncmp(start + 1, "rospero", 7)))
+		    && !struncmp(start + 1, "rospero", 7))
+		|| (n == 11
+		    && (*start == 'x' || *start == 'X')
+		    && !struncmp(start + 1, "-pine-help", 10))
+		|| (n == 13
+		    && (*start == 'x' || *start == 'X')
+		    && !struncmp(start + 1, "-alpine-help", 12)))
 	       || url_external_specific_handler(start, n))){
 		/*
 		 * Second, make sure that everything to the right of the
